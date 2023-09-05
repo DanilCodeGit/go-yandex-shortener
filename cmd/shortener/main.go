@@ -46,7 +46,7 @@ func HandleURL(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
 
-		fmt.Fprintf(w, "http://localhost:8080/%s\n", shortURL)
+		fmt.Fprintf(w, "http://localhost:8080/%s", shortURL)
 	default:
 		http.Error(w, "Метод не разрешен", http.StatusMethodNotAllowed)
 	}
