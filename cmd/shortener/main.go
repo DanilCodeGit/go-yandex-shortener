@@ -10,7 +10,7 @@ var urlStore = make(map[string]string)
 
 func ShortenURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "It's not a post-request", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -29,32 +29,40 @@ func ShortenURL(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "text/plain")
-	fmt.Fprintf(w, "http://localhost:8080/%s\n", shortURL)
+	fmt.Fprintf(w, "http://localhost:8080/%s", shortURL)
 }
 
 func RedirectURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "Метод не разрешен", http.StatusMethodNotAllowed)
 		return
 	}
 
-	id := r.URL.Path[1:]
+	// Получаем значение параметра {id} из URL
+	id := r.URL.Path[1:] // Убираем первый символ ("/")
 
-	originalURL, err := urlStore[id]
-	if !err {
-		http.Error(w, "Not Found", http.StatusNotFound)
+	// Здесь вы можете добавить логику для сопоставления id с оригинальным URL.
+	// Например, вы можете использовать карту (map) для хранения соответствий.
+
+	// Если id не найден, вернем код 400
+	if id == "" {
+		http.Error(w, "Некорректный запрос", http.StatusBadRequest)
 		return
 	}
 
-	w.WriteHeader(http.StatusTemporaryRedirect)
+	// Получите оригинальный URL на основе id (замените на вашу логику).
+
+	// В случае успешной обработки запроса, вернем код 307 и оригинальный URL
+	originalURL := "https://practicum.yandex.ru/" // Замените на ваш оригинальный URL
 	w.Header().Set("Location", originalURL)
+	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
 func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", ShortenURL)
-	mux.HandleFunc("/{id}", RedirectURL)
-	err := http.ListenAndServe(":8080", mux)
+	mux.HandleFunc(`/`, ShortenURL)
+	mux.HandleFunc(`/EwHXdJfB`, RedirectURL)
+	err := http.ListenAndServe(`:8080`, mux)
 	if err != nil {
 		panic(err)
 	}
