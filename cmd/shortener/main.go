@@ -27,8 +27,8 @@ func HandleURL(w http.ResponseWriter, r *http.Request) {
 		// Ваша логика для получения оригинального URL на основе id.
 		originalURL := urlStore[id]
 		//fmt.Fprintf(w, "%s", originalURL)
-		w.WriteHeader(http.StatusTemporaryRedirect)
 		w.Header().Set("Location", originalURL)
+		w.WriteHeader(http.StatusTemporaryRedirect)
 
 	case http.MethodPost:
 		// Read the URL from the request body
