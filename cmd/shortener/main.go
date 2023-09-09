@@ -11,10 +11,17 @@ import (
 
 var urlStore = make(map[string]string)
 
-func HandleURL(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
+func handleROOT(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		handleGet(w, r)
+	}
+	if r.Method == http.MethodPost {
+		handlePost(w, r)
+	}
+}
 
+func handleGet(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
 		// Разбить путь запроса на части
 		parts := strings.Split(r.URL.Path, "/")
 
@@ -26,11 +33,15 @@ func HandleURL(w http.ResponseWriter, r *http.Request) {
 		id := parts[1]
 		// Ваша логика для получения оригинального URL на основе id.
 		originalURL := urlStore[id]
-		//fmt.Fprintf(w, "%s", originalURL)
 		w.Header().Set("Location", originalURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
-
-	case http.MethodPost:
+	} else {
+		http.Error(w, "Only GET requests are allowed!", http.StatusMethodNotAllowed)
+		return
+	}
+}
+func handlePost(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
 		// Read the URL from the request body
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -47,8 +58,9 @@ func HandleURL(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 
 		fmt.Fprintf(w, "http://localhost:8080/%s", shortURL)
-	default:
-		http.Error(w, "Метод не разрешен", http.StatusMethodNotAllowed)
+	} else {
+		http.Error(w, "Only POST requests are allowed!", http.StatusMethodNotAllowed)
+		return
 	}
 }
 
@@ -70,7 +82,7 @@ func hashURL(urlToHash string) string {
 
 func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc(`/`, HandleURL)
+	mux.HandleFunc(`/`, handleROOT)
 	err := http.ListenAndServe(`:8080`, mux)
 	if err != nil {
 		panic(err)
