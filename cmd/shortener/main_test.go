@@ -96,8 +96,7 @@ func Test_handleGet(t *testing.T) {
 			handleGet(w, req)
 			res := w.Result()
 			assert.Equal(t, res.StatusCode, tt.want.statusCode)
-
-			if res.StatusCode == http.StatusTemporaryRedirect {
+			if assert.Equal(t, res.StatusCode, http.StatusTemporaryRedirect) {
 				locationHeader := w.Header().Get("Location")
 				assert.Equal(t, locationHeader, tt.want.originalURL)
 
