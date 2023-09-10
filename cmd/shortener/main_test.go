@@ -95,6 +95,7 @@ func Test_handleGet(t *testing.T) {
 			w := httptest.NewRecorder()
 			handleGet(w, req)
 			res := w.Result()
+			defer res.Body.Close()
 			assert.Equal(t, res.StatusCode, tt.want.statusCode)
 			if assert.Equal(t, res.StatusCode, http.StatusTemporaryRedirect) {
 				locationHeader := w.Header().Get("Location")
