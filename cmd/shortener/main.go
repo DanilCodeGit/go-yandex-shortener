@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/go-chi/chi/v5"
 )
 
 var urlStore = make(map[string]string)
@@ -64,19 +66,11 @@ func handlePost(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "http://localhost:8080/%s", ShortURL)
 }
 
-func handleROOT(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		handleGet(w, r)
-	}
-	if r.Method == http.MethodPost {
-		handlePost(w, r)
-	}
-}
-
 func main() {
-	mux := http.NewServeMux()
-	mux.HandleFunc(`/`, handleROOT)
-	err := http.ListenAndServe(`:8080`, mux)
+	r := chi.NewRouter()
+	r.Get("/{id}", handleGet)
+	r.Post("/", handlePost)
+	err := http.ListenAndServe(`:8080`, r)
 	if err != nil {
 		panic(err)
 	}
