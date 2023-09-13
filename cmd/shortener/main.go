@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +12,10 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+var (
+	listenAddr = flag.String("a", "localhost:8080", "Адрес запуска HTTP-сервера")
+	baseURL    = flag.String("b", "http://localhost:8080", "Базовый адрес результирующего сокращённого URL")
+)
 var urlStore = make(map[string]string)
 
 func hashURL(urlToHash string) string {
@@ -44,6 +49,7 @@ func handleGet(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Location", originalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
+
 func handlePost(w http.ResponseWriter, r *http.Request) {
 	// Read the URL from the request body
 	body, err := io.ReadAll(r.Body)
@@ -62,15 +68,15 @@ func handlePost(w http.ResponseWriter, r *http.Request) {
 	urlStore[ShortURL] = url
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-
-	fmt.Fprintf(w, "http://localhost:8080/%s", ShortURL)
+	fmt.Fprintf(w, "%s/%s", *baseURL, ShortURL)
+	//fmt.Fprintf(w, "http://localhost:8080/%s", ShortURL)
 }
 
 func main() {
 	r := chi.NewRouter()
 	r.Get("/{id}", handleGet)
 	r.Post("/", handlePost)
-	err := http.ListenAndServe(`:8080`, r)
+	err := http.ListenAndServe(*listenAddr, r)
 	if err != nil {
 		panic(err)
 	}
