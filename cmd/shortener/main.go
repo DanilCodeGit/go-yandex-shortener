@@ -19,7 +19,7 @@ import (
 //
 // )
 var (
-	listenAddr = flag.String("a", ":8080", "Адрес запуска HTTP-сервера")
+	listenAddr = flag.String("a", "localhost:8080", "Адрес запуска HTTP-сервера")
 	baseURL    = flag.String("b", "http://localhost:8080", "Базовый адрес результирующего сокращённого URL")
 )
 var urlStore = make(map[string]string)
@@ -79,6 +79,7 @@ func handlePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	flag.Parse()
 	r := chi.NewRouter()
 	r.Get("/{id}", handleGet)
 	r.Post("/", handlePost)
