@@ -19,8 +19,8 @@ import (
 //
 // )
 var (
-	listenAddr = flag.String("a", "", "Адрес запуска HTTP-сервера")
-	baseURL    = flag.String("b", "", "Базовый адрес результирующего сокращённого URL")
+	listenAddr = flag.String("a", ":8080", "Адрес запуска HTTP-сервера")
+	baseURL    = flag.String("b", "http://localhost:8080", "Базовый адрес результирующего сокращённого URL")
 )
 var urlStore = make(map[string]string)
 
