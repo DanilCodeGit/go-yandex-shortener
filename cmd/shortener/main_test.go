@@ -12,7 +12,7 @@ import (
 )
 
 func Test_handlePost(t *testing.T) {
-	storage.UrlStore = map[string]string{}
+	storage.URLStore = map[string]string{}
 	type want struct {
 		statusCode  int
 		responseURL string
@@ -57,7 +57,7 @@ func Test_handlePost(t *testing.T) {
 }
 
 func Test_handleGet(t *testing.T) {
-	storage.UrlStore = map[string]string{
+	storage.URLStore = map[string]string{
 		"abc123": "http://example.com",
 		"def456": "http://example.org",
 	}

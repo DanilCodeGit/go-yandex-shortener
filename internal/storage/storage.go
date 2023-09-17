@@ -1,3 +1,3 @@
 package storage
 
-var UrlStore = make(map[string]string)
+var URLStore = make(map[string]string)

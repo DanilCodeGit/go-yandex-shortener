@@ -11,7 +11,7 @@ import (
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/utils"
 )
 
-var st = storage.UrlStore
+var st = storage.URLStore
 
 func HandleGet(w http.ResponseWriter, r *http.Request) {
 	// Разбить путь запроса на части
@@ -24,7 +24,7 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 	}
 	id := parts[1]
 
-	originalURL := storage.UrlStore[id]
+	originalURL := storage.URLStore[id]
 	w.Header().Set("Location", originalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
