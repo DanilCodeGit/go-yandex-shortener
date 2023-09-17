@@ -43,7 +43,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	url := string(body)
 
-	ShortURL := utils.HashURL(url) //generateShortURL()
+	ShortURL := utils.HashURL(url)
 	st[ShortURL] = url
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
