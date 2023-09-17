@@ -6,11 +6,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/DanilCodeGit/go-yandex-shortener/internal/handlers"
+	"github.com/DanilCodeGit/go-yandex-shortener/internal/storage"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_handlePost(t *testing.T) {
-	urlStore = map[string]string{}
+	storage.UrlStore = map[string]string{}
 	type want struct {
 		statusCode  int
 		responseURL string
@@ -38,7 +40,7 @@ func Test_handlePost(t *testing.T) {
 				t.Fatal(err)
 			}
 			rr := httptest.NewRecorder()
-			handlePost(rr, req)
+			handlers.HandlePost(rr, req)
 
 			if rr.Code != tt.want.statusCode {
 				t.Errorf("got status code %d, want %d", rr.Code, tt.want.statusCode)
@@ -55,7 +57,7 @@ func Test_handlePost(t *testing.T) {
 }
 
 func Test_handleGet(t *testing.T) {
-	urlStore = map[string]string{
+	storage.UrlStore = map[string]string{
 		"abc123": "http://example.com",
 		"def456": "http://example.org",
 	}
@@ -93,7 +95,7 @@ func Test_handleGet(t *testing.T) {
 				t.Fatal(err)
 			}
 			w := httptest.NewRecorder()
-			handleGet(w, req)
+			handlers.HandleGet(w, req)
 			res := w.Result()
 			defer res.Body.Close()
 			assert.Equal(t, res.StatusCode, tt.want.statusCode)

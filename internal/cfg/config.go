@@ -2,7 +2,7 @@ package cfg
 
 import (
 	"flag"
-	"log"
+	"fmt"
 
 	"github.com/caarlos0/env"
 )
@@ -17,7 +17,8 @@ func Env() {
 	var cfg Config
 	err := env.Parse(&cfg)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Невозможно спарсить cfg")
+		return
 	}
 }
 
