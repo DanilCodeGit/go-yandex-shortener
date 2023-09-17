@@ -23,14 +23,14 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := parts[1]
-	// Ваша логика для получения оригинального URL на основе id.
+
 	originalURL := storage.UrlStore[id]
 	w.Header().Set("Location", originalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
 func HandlePost(w http.ResponseWriter, r *http.Request) {
-	// Read the URL from the request body
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -40,7 +40,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Тело запроса пустое", http.StatusBadRequest)
 		return
 	}
-	// Convert the request body to a string
+
 	url := string(body)
 
 	ShortURL := utils.HashURL(url) //generateShortURL()
