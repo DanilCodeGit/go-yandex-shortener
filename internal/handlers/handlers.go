@@ -8,7 +8,7 @@ import (
 
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/storage"
-	"github.com/DanilCodeGit/go-yandex-shortener/internal/utils"
+	"github.com/DanilCodeGit/go-yandex-shortener/internal/tools"
 )
 
 var st = storage.URLStore
@@ -23,8 +23,9 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := parts[1]
-
+	storage.Mu.Lock()
 	originalURL := storage.URLStore[id]
+	storage.Mu.Unlock()
 	w.Header().Set("Location", originalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
@@ -43,8 +44,10 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	url := string(body)
 
-	ShortURL := utils.HashURL(url)
+	ShortURL := tools.HashURL(url)
+	storage.Mu.Lock()
 	st[ShortURL] = url
+	storage.Mu.Unlock()
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, ShortURL)

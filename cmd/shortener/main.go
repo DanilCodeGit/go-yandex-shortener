@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"net/http"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
@@ -10,12 +11,15 @@ import (
 )
 
 func main() {
-	cfg.Env()
+	err := cfg.Env()
+	if err != nil {
+		log.Fatal(err)
+	}
 	flag.Parse()
 	r := chi.NewRouter()
 	r.Get("/{id}", handlers.HandleGet)
 	r.Post("/", handlers.HandlePost)
-	err := http.ListenAndServe(*cfg.FlagServerAddress, r)
+	err = http.ListenAndServe(*cfg.FlagServerAddress, r)
 	if err != nil {
 		panic(err)
 	}

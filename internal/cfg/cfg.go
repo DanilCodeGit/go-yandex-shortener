@@ -13,13 +13,13 @@ type Config struct {
 	BaseURL       string `env:"BASE_URL"`
 }
 
-func Env() {
+func Env() error {
 	var cfg Config
 	err := env.Parse(&cfg)
 	if err != nil {
 		fmt.Println("Невозможно спарсить cfg")
-		return
 	}
+	return err
 }
 
 // Флаги

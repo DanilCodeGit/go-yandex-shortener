@@ -61,6 +61,7 @@ func Test_handleGet(t *testing.T) {
 		"abc123": "http://example.com",
 		"def456": "http://example.org",
 	}
+
 	type want struct {
 		statusCode  int
 		originalURL string
