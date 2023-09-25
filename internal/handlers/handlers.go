@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/storage"
@@ -12,6 +13,7 @@ import (
 )
 
 var st = storage.URLStore
+var mu sync.Mutex
 
 func HandleGet(w http.ResponseWriter, r *http.Request) {
 	// Разбить путь запроса на части
@@ -23,9 +25,9 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := parts[1]
-	storage.Mu.Lock()
+	mu.Lock()
 	originalURL := storage.URLStore[id]
-	storage.Mu.Unlock()
+	mu.Unlock()
 	w.Header().Set("Location", originalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
@@ -45,9 +47,9 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	url := string(body)
 
 	ShortURL := tools.HashURL(url)
-	storage.Mu.Lock()
+	mu.Lock()
 	st[ShortURL] = url
-	storage.Mu.Unlock()
+	mu.Unlock()
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, ShortURL)
