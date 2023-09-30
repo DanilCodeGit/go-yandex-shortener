@@ -79,19 +79,24 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	url := st["url"]
+	url, found := st["url"]
+	if !found {
+		http.Error(w, "Missing 'url' field in JSON", http.StatusBadRequest)
+		return
+	}
 	shortURL := tools.HashURL(url)
 	shortURL = "http://localhost:8080" + "/" + shortURL
-
+	st[shortURL] = url
 	delete(st, "url")
 	mu.Lock()
 	st["result"] = shortURL
 	mu.Unlock()
-	stToJSON, _ := json.Marshal(st)
-	st[shortURL] = url
+
+	responseData := map[string]string{"result": shortURL}
+	responseJSON, _ := json.Marshal(responseData)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-
-	fmt.Fprintf(w, "%s", string(stToJSON))
+	fmt.Fprintf(w, "%s", string(responseJSON))
 
 }
