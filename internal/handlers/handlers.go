@@ -85,9 +85,10 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	shortURL := tools.HashURL(url)
-	shortURL = "http://localhost:8080" + "/" + shortURL
 	st[shortURL] = url
-	delete(st, "url")
+	shortURL = "http://localhost:8080" + "/" + shortURL
+
+	//delete(st, "url")
 	mu.Lock()
 	st["result"] = shortURL
 	mu.Unlock()
@@ -98,5 +99,4 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "%s", string(responseJSON))
-
 }
