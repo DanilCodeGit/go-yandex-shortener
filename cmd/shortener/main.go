@@ -16,12 +16,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	flag.Parse()
+
+	r := chi.NewRouter()
+
 	loggerGet := logger.WithLogging(http.HandlerFunc(handlers.HandleGet))
 	loggerPost := logger.WithLogging(http.HandlerFunc(handlers.HandlePost))
-	flag.Parse()
-	r := chi.NewRouter()
+	loggerJSONHandler := logger.WithLogging(http.HandlerFunc(handlers.JSONHandler))
 	r.Get("/{id}", loggerGet.ServeHTTP)
 	r.Post("/", loggerPost.ServeHTTP)
+	r.Post("/api/shorten", loggerJSONHandler.ServeHTTP)
+
 	err = http.ListenAndServe(*cfg.FlagServerAddress, r)
 	if err != nil {
 		panic(err)

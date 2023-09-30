@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -53,4 +55,35 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, ShortURL)
+}
+
+func JSONHandler(w http.ResponseWriter, req *http.Request) {
+	// Принять в тело json
+	// Конвертировать в строку
+	// Сократить
+	// Отдать json
+
+	var buf bytes.Buffer
+	// читаем тело запроса
+	_, err := buf.ReadFrom(req.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// Десереализуем json
+	if err = json.Unmarshal(buf.Bytes(), &st); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	url := st["url"]
+	shortURL := tools.HashURL(url)
+	delete(st, "url")
+	mu.Lock()
+	st["result"] = shortURL
+	mu.Unlock()
+	stToJSON, _ := json.Marshal(st)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	fmt.Fprintf(w, string(stToJSON))
+
 }
