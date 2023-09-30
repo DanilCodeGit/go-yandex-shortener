@@ -54,7 +54,11 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	mu.Unlock()
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, ShortURL)
+	fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, ShortURL)
+	if err != nil {
+		return
+	}
+	fmt.Print(fprintf)
 }
 
 func JSONHandler(w http.ResponseWriter, req *http.Request) {
@@ -84,6 +88,11 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) {
 	stToJSON, _ := json.Marshal(st)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, string(stToJSON))
+	write, err := w.Write(stToJSON)
+	if err != nil {
+		return
+	}
+	fmt.Print(write)
+	//fmt.Fprintf(w, string(stToJSON))
 
 }
