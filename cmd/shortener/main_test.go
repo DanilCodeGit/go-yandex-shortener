@@ -11,6 +11,30 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestJSONHandler(t *testing.T) {
+	type want struct {
+		statusCode  int
+		responseURL string
+		shorten     string
+	}
+	type args struct {
+		w   http.ResponseWriter
+		req *http.Request
+	}
+	tests := []struct {
+		name        string
+		want        want
+		requestBody string
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+		})
+	}
+}
+
 func Test_handlePost(t *testing.T) {
 	storage.URLStore = map[string]string{}
 	type want struct {
