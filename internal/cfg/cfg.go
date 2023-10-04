@@ -26,6 +26,6 @@ func Env() error {
 // Флаги
 var (
 	FlagServerAddress   = flag.String("a", "localhost:8080", "Адрес запуска HTTP-сервера")
-	FlagFileStoragePath = flag.String("f", "internal/tmp/short-url-db.gp.go", "Полное имя файла для JSON")
+	FlagFileStoragePath = flag.String("f", "internal/tmp/short-url-db.json.go", "Полное имя файла для JSON")
 	FlagBaseURL         = flag.String("b", "http://localhost:8080", "Базовый адрес результирующего сокращённого URL")
 )
