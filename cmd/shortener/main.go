@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/DanilCodeGit/go-yandex-shortener/cmd/gzip"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/handlers"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/logger"
@@ -23,7 +24,7 @@ func gzipMiddleware(h http.HandlerFunc) http.HandlerFunc {
 		supportsGzip := strings.Contains(acceptEncoding, "gzip")
 		if supportsGzip {
 			// оборачиваем оригинальный http.ResponseWriter новым с поддержкой сжатия
-			cw := newCompressWriter(w)
+			cw := gzip.NewCompressWriter(w)
 			// меняем оригинальный http.ResponseWriter на новый
 			ow = cw
 			// не забываем отправить клиенту все сжатые данные после завершения middleware
@@ -35,7 +36,7 @@ func gzipMiddleware(h http.HandlerFunc) http.HandlerFunc {
 		sendsGzip := strings.Contains(contentEncoding, "gzip")
 		if sendsGzip {
 			// оборачиваем тело запроса в io.Reader с поддержкой декомпрессии
-			cr, err := newCompressReader(r.Body)
+			cr, err := gzip.NewCompressReader(r.Body)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
