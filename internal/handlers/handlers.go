@@ -48,26 +48,26 @@ func saveURLsToDisk(filePath string, urls map[string]string) error {
 	return nil
 }
 
-func loadURLsFromDisk(filePath string, urls map[string]string) error {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	var urlData []URLData
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&urlData)
-	if err != nil {
-		return err
-	}
-
-	for _, data := range urlData {
-		urls[data.ShortURL] = data.OriginalURL
-	}
-
-	return nil
-}
+//func loadURLsFromDisk(filePath string, urls map[string]string) error {
+//	file, err := os.Open(filePath)
+//	if err != nil {
+//		return err
+//	}
+//	defer file.Close()
+//
+//	var urlData []URLData
+//	decoder := json.NewDecoder(file)
+//	err = decoder.Decode(&urlData)
+//	if err != nil {
+//		return err
+//	}
+//
+//	for _, data := range urlData {
+//		urls[data.ShortURL] = data.OriginalURL
+//	}
+//
+//	return nil
+//}
 
 func HandleGet(w http.ResponseWriter, r *http.Request) {
 	// Разбить путь запроса на части
@@ -153,9 +153,9 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	responseJSON, _ := json.Marshal(responseData)
 	// Загрузка данных URL с диска
 	if *cfg.FlagFileStoragePath != "" {
-		err := loadURLsFromDisk(*cfg.FlagFileStoragePath, st)
+		err := saveURLsToDisk(*cfg.FlagFileStoragePath, st)
 		if err != nil {
-			http.Error(w, "Failed to load data from disk", http.StatusInternalServerError)
+			http.Error(w, "Failed to save data to disk", http.StatusInternalServerError)
 			return
 		}
 	}
