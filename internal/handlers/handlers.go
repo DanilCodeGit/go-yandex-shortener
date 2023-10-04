@@ -19,7 +19,6 @@ var st = storage.URLStore
 var mu sync.Mutex
 
 type URLData struct {
-	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
@@ -29,7 +28,6 @@ func saveURLsToDisk(filePath string, urls map[string]string) error {
 
 	for shortURL, originalURL := range urls {
 		urlData = append(urlData, URLData{
-			UUID:        shortURL,
 			ShortURL:    shortURL,
 			OriginalURL: originalURL,
 		})
@@ -125,14 +123,6 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
-	// Загрузка данных URL с диска
-	if *cfg.FlagFileStoragePath != "" {
-		err := loadURLsFromDisk(*cfg.FlagFileStoragePath, st)
-		if err != nil {
-			http.Error(w, "Failed to load data from disk", http.StatusInternalServerError)
-			return
-		}
-	}
 
 	var buf bytes.Buffer
 	// читаем тело запроса
@@ -161,6 +151,14 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 
 	responseData := map[string]string{"result": shortURL}
 	responseJSON, _ := json.Marshal(responseData)
+	// Загрузка данных URL с диска
+	if *cfg.FlagFileStoragePath != "" {
+		err := loadURLsFromDisk(*cfg.FlagFileStoragePath, st)
+		if err != nil {
+			http.Error(w, "Failed to load data from disk", http.StatusInternalServerError)
+			return
+		}
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
