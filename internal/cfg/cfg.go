@@ -9,8 +9,9 @@ import (
 
 // Переменные окружения
 type Config struct {
-	ServerAddress string `env:"SERVER_ADDRESS"`
-	BaseURL       string `env:"BASE_URL"`
+	ServerAddress   string `env:"SERVER_ADDRESS"`
+	BaseURL         string `env:"BASE_URL"`
+	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 }
 
 func Env() error {
@@ -24,6 +25,7 @@ func Env() error {
 
 // Флаги
 var (
-	FlagServerAddress = flag.String("a", "localhost:8080", "Адрес запуска HTTP-сервера")
-	FlagBaseURL       = flag.String("b", "http://localhost:8080", "Базовый адрес результирующего сокращённого URL")
+	FlagServerAddress   = flag.String("a", "localhost:8080", "Адрес запуска HTTP-сервера")
+	FlagFileStoragePath = flag.String("f", "internal/tmp/short-url-db.gp.go", "Полное имя файла для JSON")
+	FlagBaseURL         = flag.String("b", "http://localhost:8080", "Базовый адрес результирующего сокращённого URL")
 )

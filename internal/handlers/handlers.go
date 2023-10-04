@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 
@@ -16,6 +17,59 @@ import (
 
 var st = storage.URLStore
 var mu sync.Mutex
+
+type URLData struct {
+	UUID        string `json:"uuid"`
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
+}
+
+func saveURLsToDisk(filePath string, urls map[string]string) error {
+	var urlData []URLData
+
+	for shortURL, originalURL := range urls {
+		urlData = append(urlData, URLData{
+			UUID:        shortURL,
+			ShortURL:    shortURL,
+			OriginalURL: originalURL,
+		})
+	}
+
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	err = encoder.Encode(urlData)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func loadURLsFromDisk(filePath string, urls map[string]string) error {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	var urlData []URLData
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&urlData)
+	if err != nil {
+		return err
+	}
+
+	for _, data := range urlData {
+		urls[data.ShortURL] = data.OriginalURL
+	}
+
+	return nil
+}
 
 func HandleGet(w http.ResponseWriter, r *http.Request) {
 	// Разбить путь запроса на части
@@ -52,6 +106,15 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	mu.Lock()
 	st[ShortURL] = url
 	mu.Unlock()
+	//
+	if *cfg.FlagFileStoragePath != "" {
+		err := saveURLsToDisk(*cfg.FlagFileStoragePath, st)
+		if err != nil {
+			http.Error(w, "Failed to save data to disk", http.StatusInternalServerError)
+			return
+		}
+	}
+	//
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 	fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, ShortURL)
@@ -61,11 +124,15 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	fmt.Print(fprintf)
 }
 
-func JSONHandler(w http.ResponseWriter, req *http.Request) {
-	// Принять в тело json
-	// Конвертировать в строку
-	// Сократить
-	// Отдать json
+func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
+	// Загрузка данных URL с диска
+	if *cfg.FlagFileStoragePath != "" {
+		err := loadURLsFromDisk(*cfg.FlagFileStoragePath, st)
+		if err != nil {
+			http.Error(w, "Failed to load data from disk", http.StatusInternalServerError)
+			return
+		}
+	}
 
 	var buf bytes.Buffer
 	// читаем тело запроса
@@ -88,7 +155,6 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) {
 	st[shortURL] = url
 	shortURL = "http://localhost:8080" + "/" + shortURL
 
-	//delete(st, "url")
 	mu.Lock()
 	st["result"] = shortURL
 	mu.Unlock()
