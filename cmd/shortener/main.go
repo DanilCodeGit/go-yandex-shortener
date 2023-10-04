@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/DanilCodeGit/go-yandex-shortener/cmd/gzip"
+	"github.com/DanilCodeGit/go-yandex-shortener/cmd/shortener/gzip"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/handlers"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/logger"
