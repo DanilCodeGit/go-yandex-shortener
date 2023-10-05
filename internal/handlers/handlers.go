@@ -151,7 +151,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 
 	responseData := map[string]string{"result": shortURL}
 	responseJSON, _ := json.Marshal(responseData)
-	// Загрузка данных URL с диска
+	//
 	if *cfg.FlagFileStoragePath != "" {
 		err := saveURLsToDisk(*cfg.FlagFileStoragePath, st)
 		if err != nil {

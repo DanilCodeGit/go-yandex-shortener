@@ -52,6 +52,7 @@ func gzipMiddleware(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func main() {
+
 	err := cfg.Env()
 	if err != nil {
 		log.Fatal(err)
