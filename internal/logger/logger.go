@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
 	"go.uber.org/zap"
 )
 
@@ -41,6 +42,7 @@ func WithLogging(h http.Handler) http.Handler {
 
 		// отправляем сведения о запросе в zap
 		sugar.Infoln(
+			"flags", *cfg.FlagFileStoragePath,
 			"uri", r.RequestURI,
 			"method", r.Method,
 			"status", responseData.status, // получаем перехваченный код статуса ответа
@@ -56,7 +58,7 @@ func WithLogging(h http.Handler) http.Handler {
 //
 
 type (
-	// берём структуру для хранения сведений об ответе
+	// Берём структуру для хранения сведений об ответе
 	responseData struct {
 		status int
 		size   int
