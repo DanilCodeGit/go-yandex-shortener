@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -23,6 +24,16 @@ type URLData struct {
 	OriginalURL string `json:"original_url"`
 }
 
+func init() {
+	if _, err := os.Stat("/tmp/short-url-db.json"); os.IsNotExist(err) {
+		file, err := os.Create("/tmp/short-url-db.json")
+		if err != nil {
+			log.Fatalf("Ошибка создания Json файла: %e", err)
+		}
+		file.Close()
+	}
+
+}
 func saveURLsToDisk(filePath string, urls map[string]string) error {
 	var urlData []URLData
 
@@ -48,26 +59,26 @@ func saveURLsToDisk(filePath string, urls map[string]string) error {
 	return nil
 }
 
-//func loadURLsFromDisk(filePath string, urls map[string]string) error {
-//	file, err := os.Open(filePath)
-//	if err != nil {
-//		return err
-//	}
-//	defer file.Close()
-//
-//	var urlData []URLData
-//	decoder := json.NewDecoder(file)
-//	err = decoder.Decode(&urlData)
-//	if err != nil {
-//		return err
-//	}
-//
-//	for _, data := range urlData {
-//		urls[data.ShortURL] = data.OriginalURL
-//	}
-//
-//	return nil
-//}
+func loadURLsFromDisk(filePath string, urls map[string]string) error {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	var urlData []URLData
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&urlData)
+	if err != nil {
+		return err
+	}
+
+	for _, data := range urlData {
+		urls[data.ShortURL] = data.OriginalURL
+	}
+
+	return nil
+}
 
 func HandleGet(w http.ResponseWriter, r *http.Request) {
 	// Разбить путь запроса на части
@@ -82,8 +93,10 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 	mu.Lock()
 	originalURL := storage.URLStore[id]
 	mu.Unlock()
+
 	w.Header().Set("Location", originalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
+
 }
 
 func HandlePost(w http.ResponseWriter, r *http.Request) {
@@ -104,7 +117,8 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	mu.Lock()
 	st[ShortURL] = url
 	mu.Unlock()
-	//
+
+	// Сохраняем хранилище на диск
 	if *cfg.FlagFileStoragePath != "" {
 		err := saveURLsToDisk(*cfg.FlagFileStoragePath, st)
 		if err != nil {
@@ -112,7 +126,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	//
+
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 	fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, ShortURL)
@@ -151,7 +165,8 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 
 	responseData := map[string]string{"result": shortURL}
 	responseJSON, _ := json.Marshal(responseData)
-	//
+
+	// Сохраняем хранилище на диск
 	if *cfg.FlagFileStoragePath != "" {
 		err := saveURLsToDisk(*cfg.FlagFileStoragePath, st)
 		if err != nil {
@@ -159,8 +174,8 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 			return
 		}
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "%s", string(responseJSON))
+
 }

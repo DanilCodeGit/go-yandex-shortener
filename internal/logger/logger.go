@@ -47,7 +47,8 @@ func WithLogging(h http.Handler) http.Handler {
 			"method", r.Method,
 			"status", responseData.status, // получаем перехваченный код статуса ответа
 			"duration", duration,
-			"size", responseData.size, // получаем перехваченный размер ответа
+			"size", responseData.size,
+			"full url", responseData, // получаем перехваченный размер ответа
 		)
 
 	}

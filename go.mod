@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/caarlos0/env v3.5.0+incompatible
 	github.com/go-chi/chi/v5 v5.0.10
+	github.com/gorilla/mux v1.8.0
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/zap v1.26.0
 )

@@ -65,6 +65,7 @@ func main() {
 	loggerGet := logger.WithLogging(gzipMiddleware(handlers.HandleGet))
 	loggerPost := logger.WithLogging(gzipMiddleware(handlers.HandlePost))
 	loggerJSONHandler := logger.WithLogging(gzipMiddleware(handlers.JSONHandler))
+
 	r.Get("/{id}", loggerGet.ServeHTTP)
 	r.Post("/", loggerPost.ServeHTTP)
 	r.Post("/api/shorten", loggerJSONHandler.ServeHTTP)
