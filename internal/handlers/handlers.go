@@ -24,15 +24,15 @@ type URLData struct {
 	OriginalURL string `json:"original_url"`
 }
 
-func init() {
+func Init() {
 	if _, err := os.Stat("/tmp/short-url-db.json"); os.IsNotExist(err) {
 		file, err := os.Create("/tmp/short-url-db.json")
 		if err != nil {
 			log.Fatalf("Ошибка создания Json файла: %e", err)
 		}
 		file.Close()
+		fmt.Println("JSON файл успешно создан по пути: /tmp/short-url-db.json")
 	}
-
 }
 func saveURLsToDisk(filePath string, urls map[string]string) error {
 	var urlData []URLData
@@ -121,9 +121,9 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	// Сохраняем хранилище на диск
 	if *cfg.FlagFileStoragePath != "" {
 		err := saveURLsToDisk(*cfg.FlagFileStoragePath, st)
+		err = saveURLsToDisk("/tmp/short-url-db.json", st)
 		if err != nil {
-			http.Error(w, "Failed to save data to disk", http.StatusInternalServerError)
-			return
+			log.Printf("Ошибка при сохранении данных на диск: %v", err)
 		}
 	}
 
@@ -169,9 +169,9 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	// Сохраняем хранилище на диск
 	if *cfg.FlagFileStoragePath != "" {
 		err := saveURLsToDisk(*cfg.FlagFileStoragePath, st)
+		err = saveURLsToDisk("/tmp/short-url-db.json", st)
 		if err != nil {
-			http.Error(w, "Failed to save data to disk", http.StatusInternalServerError)
-			return
+			log.Printf("Ошибка при сохранении данных на диск: %v", err)
 		}
 	}
 	w.Header().Set("Content-Type", "application/json")
