@@ -29,16 +29,16 @@ type ProducerData struct {
 	writer *bufio.Writer
 }
 
-func NewProducerData(filename string) (*ProducerData, error) {
-	// открываем файл для записи в конец
-	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+func NewProducerData() (*ProducerData, error) {
+	// Создаем временный файл в каталоге /tmp/
+	tmpFile, err := os.CreateTemp("tmp", "*.json")
 	if err != nil {
 		return nil, err
 	}
 
 	return &ProducerData{
-		file:   file,
-		writer: bufio.NewWriter(file),
+		file:   tmpFile,
+		writer: bufio.NewWriter(tmpFile),
 	}, nil
 }
 
@@ -143,7 +143,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	// Сохранить в файл, если указан путь для хранения данных
 	if *cfg.FlagFileStoragePath != "" {
-		p, err := NewProducerData(*cfg.FlagFileStoragePath)
+		p, err := NewProducerData()
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
@@ -193,7 +193,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	mu.Unlock()
 
 	if *cfg.FlagFileStoragePath != "" {
-		p, err := NewProducerData(*cfg.FlagFileStoragePath)
+		p, err := NewProducerData()
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
