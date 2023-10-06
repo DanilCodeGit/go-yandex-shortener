@@ -21,7 +21,7 @@ var mu sync.Mutex
 
 func init() {
 	// Инициализируйте JSON-файл и создайте его, если его нет
-	file, err := os.OpenFile(*cfg.FlagFileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile(*cfg.FlagFileStoragePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -139,7 +139,6 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	}
 
 	shortURL = "http://localhost:8080" + "/" + shortURL
-	
 	responseData := map[string]string{"result": shortURL}
 	responseJSON, _ := json.Marshal(responseData)
 
