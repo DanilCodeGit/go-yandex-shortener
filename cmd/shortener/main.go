@@ -2,10 +2,8 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/cmd/shortener/gzip"
@@ -54,24 +52,8 @@ func gzipMiddleware(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func main() {
-	// Имя переменной окружения, которую вы хотите установить
-	envVarName := "FILE_STORAGE_PATH"
 
-	// Значение, которое вы хотите установить для переменной окружения
-	envVarValue := "/tmp/short-url-db.json"
-
-	// Установить переменную окружения
-	err := os.Setenv(envVarName, envVarValue)
-
-	// Проверить наличие ошибки при установке переменной окружения
-	if err != nil {
-		fmt.Printf("Ошибка при установке переменной окружения %s: %v\n", envVarName, err)
-	} else {
-		fmt.Printf("Переменная окружения %s успешно установлена\n", envVarName)
-	}
-
-	handlers.Init()
-	err = cfg.Env()
+	err := cfg.Env()
 	if err != nil {
 		log.Fatal(err)
 	}

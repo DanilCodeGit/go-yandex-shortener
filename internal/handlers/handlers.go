@@ -1,11 +1,11 @@
 package handlers
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -24,60 +24,83 @@ type URLData struct {
 	OriginalURL string `json:"original_url"`
 }
 
-func Init() {
-	if _, err := os.Stat("/tmp/short-url-db.json"); os.IsNotExist(err) {
-		file, err := os.Create("/tmp/short-url-db.json")
-		if err != nil {
-			log.Fatalf("Ошибка создания Json файла: %e", err)
-		}
-		file.Close()
-		fmt.Println("JSON файл успешно создан по пути: /tmp/short-url-db.json")
-	}
-}
-func saveURLsToDisk(filePath string, urls map[string]string) error {
-	var urlData []URLData
-
-	for shortURL, originalURL := range urls {
-		urlData = append(urlData, URLData{
-			ShortURL:    shortURL,
-			OriginalURL: originalURL,
-		})
-	}
-
-	file, err := os.Create(filePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	err = encoder.Encode(urlData)
-	if err != nil {
-		return err
-	}
-
-	return nil
+type ProducerData struct {
+	file   *os.File // файл для записи
+	writer *bufio.Writer
 }
 
-func loadURLsFromDisk(filePath string, urls map[string]string) error {
-	file, err := os.Open(filePath)
+func NewProducerData(filename string) (*ProducerData, error) {
+	// открываем файл для записи в конец
+	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ProducerData{
+		file:   file,
+		writer: bufio.NewWriter(file),
+	}, nil
+}
+
+func (p *ProducerData) Close() error {
+	// закрываем файл
+	return p.file.Close()
+}
+
+func (p *ProducerData) WriteEvent(urls *URLData) error {
+	data, err := json.Marshal(&urls)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
-	var urlData []URLData
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&urlData)
-	if err != nil {
+	// записываем событие в буфер
+	if _, err := p.writer.Write(data); err != nil {
 		return err
 	}
 
-	for _, data := range urlData {
-		urls[data.ShortURL] = data.OriginalURL
+	// добавляем перенос строки
+	if err := p.writer.WriteByte('\n'); err != nil {
+		return err
 	}
 
-	return nil
+	// записываем буфер в файл
+	return p.writer.Flush()
+}
+
+type Consumer struct {
+	file *os.File
+	// добавляем reader в Consumer
+	scanner *bufio.Scanner
+}
+
+func NewConsumer(filename string) (*Consumer, error) {
+	file, err := os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0666)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Consumer{
+		file: file,
+		// создаём новый Reader
+		scanner: bufio.NewScanner(file),
+	}, nil
+}
+
+func (c *Consumer) ReadEvent() (*URLData, error) {
+	// одиночное сканирование до следующей строки
+	if !c.scanner.Scan() {
+		return nil, c.scanner.Err()
+	}
+	// читаем данные из scanner
+	data := c.scanner.Bytes()
+
+	urls := URLData{}
+	err := json.Unmarshal(data, &urls)
+	if err != nil {
+		return nil, err
+	}
+
+	return &urls, nil
 }
 
 func HandleGet(w http.ResponseWriter, r *http.Request) {
@@ -118,12 +141,18 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	st[ShortURL] = url
 	mu.Unlock()
 
-	// Сохраняем хранилище на диск
+	// Сохранить в файл, если указан путь для хранения данных
 	if *cfg.FlagFileStoragePath != "" {
-		err := saveURLsToDisk(*cfg.FlagFileStoragePath, st)
-		err = saveURLsToDisk("/tmp/short-url-db.json", st)
+		p, err := NewProducerData(*cfg.FlagFileStoragePath)
 		if err != nil {
-			log.Printf("Ошибка при сохранении данных на диск: %v", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		defer p.Close()
+		// Записать в файл
+		if err := p.WriteEvent(&URLData{ShortURL: ShortURL, OriginalURL: url}); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
 		}
 	}
 
@@ -163,19 +192,25 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	st["result"] = shortURL
 	mu.Unlock()
 
+	if *cfg.FlagFileStoragePath != "" {
+		p, err := NewProducerData(*cfg.FlagFileStoragePath)
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		defer p.Close()
+		// Записать в файл
+		if err := p.WriteEvent(&URLData{ShortURL: shortURL, OriginalURL: url}); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+	}
+
 	responseData := map[string]string{"result": shortURL}
 	responseJSON, _ := json.Marshal(responseData)
 
-	// Сохраняем хранилище на диск
-	if *cfg.FlagFileStoragePath != "" {
-		err := saveURLsToDisk(*cfg.FlagFileStoragePath, st)
-		err = saveURLsToDisk("/tmp/short-url-db.json", st)
-		if err != nil {
-			log.Printf("Ошибка при сохранении данных на диск: %v", err)
-		}
-	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, "%s", string(responseJSON))
+	fmt.Fprintf(w, "%v", string(responseJSON))
 
 }
