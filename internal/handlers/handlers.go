@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -19,88 +19,42 @@ import (
 var st = storage.URLStore
 var mu sync.Mutex
 
+func init() {
+	// Инициализируйте JSON-файл и создайте его, если его нет
+	file, err := os.OpenFile(*cfg.FlagFileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+}
+
+// Функция для записи данных в JSON-файл
+func writeToJSONFile(shortURL, originalURL string) error {
+	file, err := os.OpenFile(*cfg.FlagFileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	data := URLData{
+		ShortURL:    shortURL,
+		OriginalURL: originalURL,
+	}
+
+	// Создаем кодировщик JSON
+	encoder := json.NewEncoder(file)
+
+	// Записываем данные в файл
+	if err := encoder.Encode(data); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type URLData struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
-}
-
-type ProducerData struct {
-	file   *os.File // файл для записи
-	writer *bufio.Writer
-}
-
-func NewProducerData() (*ProducerData, error) {
-	// Создаем временный файл в каталоге /tmp/
-	tmpFile, err := os.CreateTemp("tmp", "*.json")
-	if err != nil {
-		return nil, err
-	}
-
-	return &ProducerData{
-		file:   tmpFile,
-		writer: bufio.NewWriter(tmpFile),
-	}, nil
-}
-
-func (p *ProducerData) Close() error {
-	// закрываем файл
-	return p.file.Close()
-}
-
-func (p *ProducerData) WriteEvent(urls *URLData) error {
-	data, err := json.Marshal(&urls)
-	if err != nil {
-		return err
-	}
-
-	// записываем событие в буфер
-	if _, err := p.writer.Write(data); err != nil {
-		return err
-	}
-
-	// добавляем перенос строки
-	if err := p.writer.WriteByte('\n'); err != nil {
-		return err
-	}
-
-	// записываем буфер в файл
-	return p.writer.Flush()
-}
-
-type Consumer struct {
-	file *os.File
-	// добавляем reader в Consumer
-	scanner *bufio.Scanner
-}
-
-func NewConsumer(filename string) (*Consumer, error) {
-	file, err := os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0666)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Consumer{
-		file: file,
-		// создаём новый Reader
-		scanner: bufio.NewScanner(file),
-	}, nil
-}
-
-func (c *Consumer) ReadEvent() (*URLData, error) {
-	// одиночное сканирование до следующей строки
-	if !c.scanner.Scan() {
-		return nil, c.scanner.Err()
-	}
-	// читаем данные из scanner
-	data := c.scanner.Bytes()
-
-	urls := URLData{}
-	err := json.Unmarshal(data, &urls)
-	if err != nil {
-		return nil, err
-	}
-
-	return &urls, nil
 }
 
 func HandleGet(w http.ResponseWriter, r *http.Request) {
@@ -141,19 +95,10 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	st[ShortURL] = url
 	mu.Unlock()
 
-	// Сохранить в файл, если указан путь для хранения данных
-	if *cfg.FlagFileStoragePath != "" {
-		p, err := NewProducerData()
-		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		defer p.Close()
-		// Записать в файл
-		if err := p.WriteEvent(&URLData{ShortURL: ShortURL, OriginalURL: url}); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
+	// Записываем данные в JSON-файл
+	if err := writeToJSONFile(ShortURL, url); err != nil {
+		http.Error(w, "Ошибка при записи в JSON-файл", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -187,24 +132,6 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	shortURL := tools.HashURL(url)
 	st[shortURL] = url
 	shortURL = "http://localhost:8080" + "/" + shortURL
-
-	mu.Lock()
-	st["result"] = shortURL
-	mu.Unlock()
-
-	if *cfg.FlagFileStoragePath != "" {
-		p, err := NewProducerData()
-		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		defer p.Close()
-		// Записать в файл
-		if err := p.WriteEvent(&URLData{ShortURL: shortURL, OriginalURL: url}); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-	}
 
 	responseData := map[string]string{"result": shortURL}
 	responseJSON, _ := json.Marshal(responseData)
