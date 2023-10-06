@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -82,8 +83,21 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	st[ShortURL] = url
 	mu.Unlock()
 
+	//// Сохраняем данные в файл после обновления
+	//if err := saveDataToFile(st, *cfg.FlagFileStoragePath); err != nil {
+	//	http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
+	//	return
+	//}
+
+	// Полный путь к файлу базы данных JSON
+	dbFilePath, err := filepath.Abs(*cfg.FlagFileStoragePath)
+	if err != nil {
+		http.Error(w, "Failed to get absolute path for the database file", http.StatusInternalServerError)
+		return
+	}
+
 	// Сохраняем данные в файл после обновления
-	if err := saveDataToFile(st, *cfg.FlagFileStoragePath); err != nil {
+	if err := saveDataToFile(st, dbFilePath); err != nil {
 		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
 		return
 	}
@@ -119,15 +133,15 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	shortURL := tools.HashURL(url)
 	st[shortURL] = url
 
+	shortURL = "http://localhost:8080" + "/" + shortURL
+	responseData := map[string]string{"result": shortURL}
+	responseJSON, _ := json.Marshal(responseData)
+
 	// Сохраняем данные в файл после обновления
 	if err := saveDataToFile(st, *cfg.FlagFileStoragePath); err != nil {
 		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
 		return
 	}
-
-	shortURL = "http://localhost:8080" + "/" + shortURL
-	responseData := map[string]string{"result": shortURL}
-	responseJSON, _ := json.Marshal(responseData)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
