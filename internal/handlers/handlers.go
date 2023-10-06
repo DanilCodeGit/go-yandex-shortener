@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -19,42 +18,30 @@ import (
 var st = storage.URLStore
 var mu sync.Mutex
 
-func init() {
-	// Инициализируйте JSON-файл и создайте его, если его нет
-	file, err := os.OpenFile(*cfg.FlagFileStoragePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
+type URLData struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
 }
 
-// Функция для записи данных в JSON-файл
-func writeToJSONFile(shortURL, originalURL string) error {
-	file, err := os.OpenFile(*cfg.FlagFileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+func saveDataToFile(data map[string]string, filePath string) error {
+	// Преобразуем данные в формат URLData
+	var jsonData []URLData
+	for shortURL, originalURL := range data {
+		jsonData = append(jsonData, URLData{ShortURL: shortURL, OriginalURL: originalURL})
+	}
+
+	file, err := os.Create(filePath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	data := URLData{
-		ShortURL:    shortURL,
-		OriginalURL: originalURL,
-	}
-
-	// Создаем кодировщик JSON
 	encoder := json.NewEncoder(file)
-
-	// Записываем данные в файл
-	if err := encoder.Encode(data); err != nil {
+	if err := encoder.Encode(jsonData); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-type URLData struct {
-	ShortURL    string `json:"short_url"`
-	OriginalURL string `json:"original_url"`
 }
 
 func HandleGet(w http.ResponseWriter, r *http.Request) {
@@ -95,9 +82,9 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	st[ShortURL] = url
 	mu.Unlock()
 
-	// Записываем данные в JSON-файл
-	if err := writeToJSONFile(ShortURL, url); err != nil {
-		http.Error(w, "Ошибка при записи в JSON-файл", http.StatusInternalServerError)
+	// Сохраняем данные в файл после обновления
+	if err := saveDataToFile(st, *cfg.FlagFileStoragePath); err != nil {
+		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
 		return
 	}
 
@@ -132,9 +119,9 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	shortURL := tools.HashURL(url)
 	st[shortURL] = url
 
-	// Записываем данные в JSON-файл
-	if err := writeToJSONFile(shortURL, url); err != nil {
-		http.Error(w, "Ошибка при записи в JSON-файл", http.StatusInternalServerError)
+	// Сохраняем данные в файл после обновления
+	if err := saveDataToFile(st, *cfg.FlagFileStoragePath); err != nil {
+		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
 		return
 	}
 
