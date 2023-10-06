@@ -131,8 +131,15 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	}
 	shortURL := tools.HashURL(url)
 	st[shortURL] = url
-	shortURL = "http://localhost:8080" + "/" + shortURL
 
+	// Записываем данные в JSON-файл
+	if err := writeToJSONFile(shortURL, url); err != nil {
+		http.Error(w, "Ошибка при записи в JSON-файл", http.StatusInternalServerError)
+		return
+	}
+
+	shortURL = "http://localhost:8080" + "/" + shortURL
+	
 	responseData := map[string]string{"result": shortURL}
 	responseJSON, _ := json.Marshal(responseData)
 
