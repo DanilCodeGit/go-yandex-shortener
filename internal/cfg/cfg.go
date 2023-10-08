@@ -48,6 +48,7 @@ package cfg
 
 import (
 	"flag"
+	"os"
 
 	"github.com/caarlos0/env"
 )
@@ -75,15 +76,15 @@ func InitConfig() (*Config, error) {
 		return nil, err
 	}
 
-	// Если флаги не установлены, используем значения из переменных окружения
-	if *FlagServerAddress == "" {
-		*FlagServerAddress = cfg.ServerAddress
+	// Если переменные окружения существуют, установите флаги из переменных окружения
+	if serverAddressEnv, exists := os.LookupEnv("SERVER_ADDRESS"); exists {
+		*FlagServerAddress = serverAddressEnv
 	}
-	if *FlagFileStoragePath == "" {
-		*FlagFileStoragePath = cfg.FileStoragePath
+	if fileStoragePathEnv, exists := os.LookupEnv("FILE_STORAGE_PATH"); exists {
+		*FlagFileStoragePath = fileStoragePathEnv
 	}
-	if *FlagBaseURL == "" {
-		*FlagBaseURL = cfg.BaseURL
+	if baseURLEnv, exists := os.LookupEnv("BASE_URL"); exists {
+		*FlagBaseURL = baseURLEnv
 	}
 
 	return &cfg, nil
