@@ -13,6 +13,30 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+func main() {
+
+	err := cfg.Env()
+	if err != nil {
+		log.Fatal(err)
+	}
+	flag.Parse()
+
+	r := chi.NewRouter()
+
+	loggerGet := logger.WithLogging(gzipMiddleware(handlers.HandleGet))
+	loggerPost := logger.WithLogging(gzipMiddleware(handlers.HandlePost))
+	loggerJSONHandler := logger.WithLogging(gzipMiddleware(handlers.JSONHandler))
+
+	r.Get("/{id}", loggerGet.ServeHTTP)
+	r.Post("/", loggerPost.ServeHTTP)
+	r.Post("/api/shorten", loggerJSONHandler.ServeHTTP)
+
+	err = http.ListenAndServe(*cfg.FlagServerAddress, r)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func gzipMiddleware(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// по умолчанию устанавливаем оригинальный http.ResponseWriter как тот,
@@ -48,30 +72,5 @@ func gzipMiddleware(h http.HandlerFunc) http.HandlerFunc {
 
 		// передаём управление хендлеру
 		h.ServeHTTP(ow, r)
-	}
-}
-
-func main() {
-
-	err := cfg.Env()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	flag.Parse()
-
-	r := chi.NewRouter()
-
-	loggerGet := logger.WithLogging(gzipMiddleware(handlers.HandleGet))
-	loggerPost := logger.WithLogging(gzipMiddleware(handlers.HandlePost))
-	loggerJSONHandler := logger.WithLogging(gzipMiddleware(handlers.JSONHandler))
-
-	r.Get("/{id}", loggerGet.ServeHTTP)
-	r.Post("/", loggerPost.ServeHTTP)
-	r.Post("/api/shorten", loggerJSONHandler.ServeHTTP)
-
-	err = http.ListenAndServe(*cfg.FlagServerAddress, r)
-	if err != nil {
-		panic(err)
 	}
 }
