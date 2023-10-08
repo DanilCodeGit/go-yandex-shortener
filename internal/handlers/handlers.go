@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
+	"github.com/DanilCodeGit/go-yandex-shortener/internal/database/postgre"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/storage"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/tools"
 )
@@ -50,25 +51,6 @@ func init() {
 		fmt.Println("Failed to save initial data to file:", err)
 		os.Exit(1)
 	}
-}
-
-func HandleGet(w http.ResponseWriter, r *http.Request) {
-	// Разбить путь запроса на части
-	parts := strings.Split(r.URL.Path, "/")
-
-	// Извлечь значение {id}
-	if len(parts) < 2 || parts[1] == "" {
-		http.Error(w, "Некорректный запрос", http.StatusBadRequest)
-		return
-	}
-	id := parts[1]
-	mu.Lock()
-	originalURL := storage.URLStore[id]
-	mu.Unlock()
-
-	w.Header().Set("Location", originalURL)
-	w.WriteHeader(http.StatusTemporaryRedirect)
-
 }
 
 func HandlePost(w http.ResponseWriter, r *http.Request) {
@@ -158,4 +140,30 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "%v", string(responseJSON))
 
+}
+
+func HandleGet(w http.ResponseWriter, r *http.Request) {
+	// Разбить путь запроса на части
+	parts := strings.Split(r.URL.Path, "/")
+
+	// Извлечь значение {id}
+	if len(parts) < 2 || parts[1] == "" {
+		http.Error(w, "Некорректный запрос", http.StatusBadRequest)
+		return
+	}
+	id := parts[1]
+	mu.Lock()
+	originalURL := storage.URLStore[id]
+	mu.Unlock()
+
+	w.Header().Set("Location", originalURL)
+	w.WriteHeader(http.StatusTemporaryRedirect)
+
+}
+
+func HandlePing(w http.ResponseWriter, r *http.Request) {
+	if err := postgre.DBConn(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	w.WriteHeader(http.StatusOK)
 }

@@ -6,20 +6,23 @@ import (
 
 	"github.com/DanilCodeGit/go-yandex-shortener/cmd/shortener/gzip"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
+	"github.com/DanilCodeGit/go-yandex-shortener/internal/database/postgre"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/handlers"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/logger"
 	"github.com/go-chi/chi/v5"
 )
 
 func main() {
+	postgre.DBConn()
+
 	cfg.InitConfig()
 
 	r := chi.NewRouter()
-
+	loggerGetPing := logger.WithLogging(gzipMiddleware(handlers.HandlePing))
 	loggerGet := logger.WithLogging(gzipMiddleware(handlers.HandleGet))
 	loggerPost := logger.WithLogging(gzipMiddleware(handlers.HandlePost))
 	loggerJSONHandler := logger.WithLogging(gzipMiddleware(handlers.JSONHandler))
-
+	r.Get("/ping", loggerGetPing.ServeHTTP)
 	r.Get("/{id}", loggerGet.ServeHTTP)
 	r.Post("/", loggerPost.ServeHTTP)
 	r.Post("/api/shorten", loggerJSONHandler.ServeHTTP)
