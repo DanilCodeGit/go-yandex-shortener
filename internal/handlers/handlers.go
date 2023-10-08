@@ -95,7 +95,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to get absolute path for the database file", http.StatusInternalServerError)
 		return
 	}
-
+	fmt.Println(dbFilePath)
 	// Сохраняем данные в файл после обновления
 	if err := saveDataToFile(st, dbFilePath); err != nil {
 		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
