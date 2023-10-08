@@ -162,6 +162,7 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandlePing(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Location", "Success")
 	if err := postgre.DBConn(); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
