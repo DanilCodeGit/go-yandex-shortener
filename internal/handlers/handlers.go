@@ -43,27 +43,34 @@ type URLData struct {
 //
 //		return nil
 //	}
-func saveDataToFile(data map[string]string) (string, error) {
+
+func saveDataToFile(data map[string]string, filePath string) error {
 	// Преобразуем данные в формат URLData
 	var jsonData []URLData
 	for shortURL, originalURL := range data {
 		jsonData = append(jsonData, URLData{ShortURL: shortURL, OriginalURL: originalURL})
 	}
 
-	// Создаем временный файл в папке /tmp
-	tmpFile, err := os.CreateTemp("/tmp", "*.json")
+	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		return "", err
+		return err
 	}
-	defer tmpFile.Close()
+	defer file.Close()
 
-	encoder := json.NewEncoder(tmpFile)
+	encoder := json.NewEncoder(file)
 	if err := encoder.Encode(jsonData); err != nil {
-		return "", err
+		return err
 	}
 
-	// Возвращаем путь к временному файлу
-	return tmpFile.Name(), nil
+	return nil
+}
+func init() {
+	// Вызываем saveDataToFile один раз при инициализации приложения
+	err := saveDataToFile(st, *cfg.FlagFileStoragePath)
+	if err != nil {
+		fmt.Println("Failed to save initial data to file:", err)
+		os.Exit(1)
+	}
 }
 
 func HandleGet(w http.ResponseWriter, r *http.Request) {
@@ -116,18 +123,35 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	//	http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
 	//	return
 	//}
+	// Загрузка данных из JSON-файла перед обработкой POST-запроса
+	// Сохраняем данные в файл после обновления
 
-	// Если флаг -f не установлен, создаем временный JSON-файл
-	if *cfg.FlagFileStoragePath == "" {
-		// Преобразуем данные в формат URLData и сохраняем во временный файл
-		tmpFilePath, err := saveDataToFile(st)
-		if err != nil {
-			fmt.Println("Failed to save data to temporary file:", err)
-			return
-		}
+	//// Если флаг -f не установлен, создаем временный JSON-файл
+	//if *cfg.FlagFileStoragePath == "" {
+	//	// Преобразуем данные в формат URLData и сохраняем во временный файл
+	//	tmpFilePath, err := saveDataToFile(st)
+	//	if err != nil {
+	//		fmt.Println("Failed to save data to temporary file:", err)
+	//		return
+	//	}
+	//
+	//	// Устанавливаем флаг -f равным пути к временному файлу
+	//	*cfg.FlagFileStoragePath = tmpFilePath
+	//}
 
-		// Устанавливаем флаг -f равным пути к временному файлу
-		*cfg.FlagFileStoragePath = tmpFilePath
+	// Преобразование данных в формат JSON
+	jsonData := make(map[string]string)
+	mu.Lock()
+	for shortURL, originalURL := range st {
+		jsonData[shortURL] = originalURL
+	}
+	mu.Unlock()
+
+	// Сохранение данных в файл после обновления
+	err = saveDataToFile(jsonData, *cfg.FlagFileStoragePath)
+	if err != nil {
+		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -170,17 +194,22 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	//	http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
 	//	return
 	//}
-	// Если флаг -f не установлен, создаем временный JSON-файл
-	if *cfg.FlagFileStoragePath == "" {
-		// Преобразуем данные в формат URLData и сохраняем во временный файл
-		tmpFilePath, err := saveDataToFile(st)
-		if err != nil {
-			fmt.Println("Failed to save data to temporary file:", err)
-			return
-		}
+	// Загрузка данных из JSON-файла перед обработкой POST-запроса
 
-		// Устанавливаем флаг -f равным пути к временному файлу
-		*cfg.FlagFileStoragePath = tmpFilePath
+	// Если флаг -f не установлен, создаем временный JSON-файл
+	// Преобразование данных в формат JSON
+	jsonData := make(map[string]string)
+	mu.Lock()
+	for shortURL, originalURL := range st {
+		jsonData[shortURL] = originalURL
+	}
+	mu.Unlock()
+
+	// Сохранение данных в файл после обновления
+	err = saveDataToFile(jsonData, *cfg.FlagFileStoragePath)
+	if err != nil {
+		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
