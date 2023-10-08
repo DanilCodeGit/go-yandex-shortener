@@ -13,11 +13,6 @@ import (
 
 func main() {
 	cfg.InitConfig()
-	//err := cfg.Env()
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//flag.Parse()
 
 	r := chi.NewRouter()
 
