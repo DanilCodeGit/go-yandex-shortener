@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 
@@ -24,25 +23,47 @@ type URLData struct {
 	OriginalURL string `json:"original_url"`
 }
 
-func saveDataToFile(data map[string]string, filePath string) error {
+//	func saveDataToFile(data map[string]string, filePath string) error {
+//		// Преобразуем данные в формат URLData
+//		var jsonData []URLData
+//		for shortURL, originalURL := range data {
+//			jsonData = append(jsonData, URLData{ShortURL: shortURL, OriginalURL: originalURL})
+//		}
+//
+//		file, err := os.Create(filePath)
+//		if err != nil {
+//			return err
+//		}
+//		defer file.Close()
+//
+//		encoder := json.NewEncoder(file)
+//		if err := encoder.Encode(jsonData); err != nil {
+//			return err
+//		}
+//
+//		return nil
+//	}
+func saveDataToFile(data map[string]string) (string, error) {
 	// Преобразуем данные в формат URLData
 	var jsonData []URLData
 	for shortURL, originalURL := range data {
 		jsonData = append(jsonData, URLData{ShortURL: shortURL, OriginalURL: originalURL})
 	}
 
-	file, err := os.Create(filePath)
+	// Создаем временный файл в папке /tmp
+	tmpFile, err := os.CreateTemp("/tmp", "*.json")
 	if err != nil {
-		return err
+		return "", err
 	}
-	defer file.Close()
+	defer tmpFile.Close()
 
-	encoder := json.NewEncoder(file)
+	encoder := json.NewEncoder(tmpFile)
 	if err := encoder.Encode(jsonData); err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	// Возвращаем путь к временному файлу
+	return tmpFile.Name(), nil
 }
 
 func HandleGet(w http.ResponseWriter, r *http.Request) {
@@ -83,23 +104,30 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	st[ShortURL] = url
 	mu.Unlock()
 
+	//// Полный путь к файлу базы данных JSON
+	//dbFilePath, err := filepath.Abs(*cfg.FlagFileStoragePath)
+	//if err != nil {
+	//	http.Error(w, "Failed to get absolute path for the database file", http.StatusInternalServerError)
+	//	return
+	//}
+	//fmt.Println(dbFilePath)
 	//// Сохраняем данные в файл после обновления
-	//if err := saveDataToFile(st, *cfg.FlagFileStoragePath); err != nil {
+	//if err := saveDataToFile(st, dbFilePath); err != nil {
 	//	http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
 	//	return
 	//}
 
-	// Полный путь к файлу базы данных JSON
-	dbFilePath, err := filepath.Abs(*cfg.FlagFileStoragePath)
-	if err != nil {
-		http.Error(w, "Failed to get absolute path for the database file", http.StatusInternalServerError)
-		return
-	}
-	fmt.Println(dbFilePath)
-	// Сохраняем данные в файл после обновления
-	if err := saveDataToFile(st, dbFilePath); err != nil {
-		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
-		return
+	// Если флаг -f не установлен, создаем временный JSON-файл
+	if *cfg.FlagFileStoragePath == "" {
+		// Преобразуем данные в формат URLData и сохраняем во временный файл
+		tmpFilePath, err := saveDataToFile(st)
+		if err != nil {
+			fmt.Println("Failed to save data to temporary file:", err)
+			return
+		}
+
+		// Устанавливаем флаг -f равным пути к временному файлу
+		*cfg.FlagFileStoragePath = tmpFilePath
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -136,11 +164,23 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	shortURL = "http://localhost:8080" + "/" + shortURL
 	responseData := map[string]string{"result": shortURL}
 	responseJSON, _ := json.Marshal(responseData)
+	//
+	//// Сохраняем данные в файл после обновления
+	//if err := saveDataToFile(st, *cfg.FlagFileStoragePath); err != nil {
+	//	http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
+	//	return
+	//}
+	// Если флаг -f не установлен, создаем временный JSON-файл
+	if *cfg.FlagFileStoragePath == "" {
+		// Преобразуем данные в формат URLData и сохраняем во временный файл
+		tmpFilePath, err := saveDataToFile(st)
+		if err != nil {
+			fmt.Println("Failed to save data to temporary file:", err)
+			return
+		}
 
-	// Сохраняем данные в файл после обновления
-	if err := saveDataToFile(st, *cfg.FlagFileStoragePath); err != nil {
-		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
-		return
+		// Устанавливаем флаг -f равным пути к временному файлу
+		*cfg.FlagFileStoragePath = tmpFilePath
 	}
 
 	w.Header().Set("Content-Type", "application/json")
