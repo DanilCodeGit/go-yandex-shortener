@@ -1,8 +1,6 @@
 package main
 
 import (
-	"flag"
-	"log"
 	"net/http"
 	"strings"
 
@@ -14,12 +12,12 @@ import (
 )
 
 func main() {
-
-	err := cfg.Env()
-	if err != nil {
-		log.Fatal(err)
-	}
-	flag.Parse()
+	cfg.InitConfig()
+	//err := cfg.Env()
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//flag.Parse()
 
 	r := chi.NewRouter()
 
@@ -31,7 +29,7 @@ func main() {
 	r.Post("/", loggerPost.ServeHTTP)
 	r.Post("/api/shorten", loggerJSONHandler.ServeHTTP)
 
-	err = http.ListenAndServe(*cfg.FlagServerAddress, r)
+	err := http.ListenAndServe(*cfg.FlagServerAddress, r)
 	if err != nil {
 		panic(err)
 	}
