@@ -62,7 +62,7 @@ type Config struct {
 // Флаги
 var (
 	FlagServerAddress   = flag.String("a", "localhost:8080", "Адрес запуска HTTP-сервера")
-	FlagFileStoragePath = flag.String("f", "", "Полное имя файла до JSON")
+	FlagFileStoragePath = flag.String("f", "/tmp/short-url-db.json", "Полное имя файла до JSON")
 	FlagBaseURL         = flag.String("b", "http://localhost:8080", "Базовый адрес результирующего сокращённого URL")
 )
 
