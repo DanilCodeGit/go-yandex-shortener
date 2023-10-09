@@ -2,7 +2,6 @@ package postgre
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
@@ -10,9 +9,10 @@ import (
 )
 
 func DBConn() error {
+
 	db, err := sql.Open("pgx", *cfg.FlagDataBaseDSN)
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 
 	defer db.Close()
@@ -20,6 +20,6 @@ func DBConn() error {
 	if err != nil {
 		log.Fatal("Неудачное подключение")
 	}
-
+	log.Println("Успешное подключение")
 	return err
 }

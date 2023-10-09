@@ -17,7 +17,7 @@ type Config struct {
 
 // Флаги
 var (
-	FlagDataBaseDSN     = flag.String("d", "host=localhost port=5434 dbname=postgres user=postgres password=dixedDIX-111 sslmode=prefer connect_timeout=10", "Строка подключения к БД")
+	FlagDataBaseDSN     = flag.String("d", "host=localhost port=5434 dbname=postgres user=postgres password=dixedDIX-111 sslmode=disable connect_timeout=10", "Строка подключения к БД")
 	FlagServerAddress   = flag.String("a", "localhost:8080", "Адрес запуска HTTP-сервера")
 	FlagFileStoragePath = flag.String("f", "/tmp/short-url-db.json", "Полное имя файла до JSON")
 	FlagBaseURL         = flag.String("b", "http://localhost:8080", "Базовый адрес результирующего сокращённого URL")
