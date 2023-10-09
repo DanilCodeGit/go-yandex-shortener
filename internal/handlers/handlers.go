@@ -160,8 +160,11 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 
 }
-
+func HandlePingWrapper(w http.ResponseWriter, r *http.Request) {
+	HandlePing(w, r)
+}
 func HandlePing(w http.ResponseWriter, r *http.Request) {
+
 	if err := postgre.DBConn(); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}

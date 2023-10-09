@@ -18,11 +18,11 @@ func main() {
 	cfg.InitConfig()
 
 	r := chi.NewRouter()
-	loggerGetPing := logger.WithLogging(gzipMiddleware(handlers.HandlePing))
+	loggerGetPing := handlers.HandlePing
 	loggerGet := logger.WithLogging(gzipMiddleware(handlers.HandleGet))
 	loggerPost := logger.WithLogging(gzipMiddleware(handlers.HandlePost))
 	loggerJSONHandler := logger.WithLogging(gzipMiddleware(handlers.JSONHandler))
-	r.Get("/ping", loggerGetPing.ServeHTTP)
+	r.Get("/ping", loggerGetPing)
 	r.Get("/{id}", loggerGet.ServeHTTP)
 	r.Post("/", loggerPost.ServeHTTP)
 	r.Post("/api/shorten", loggerJSONHandler.ServeHTTP)
