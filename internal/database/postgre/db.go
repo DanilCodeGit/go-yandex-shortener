@@ -11,27 +11,13 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-func DBConn() error {
-	//
-	//db, err := sql.Open("pgx", *cfg.FlagDataBaseDSN)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//defer db.Close()
-	//err = db.Ping()
-	//if err != nil {
-	//	log.Fatal("Неудачное подключение")
-	//}
-	//log.Println("Успешное подключение")
-	//return err
-	conn, err := pgx.Connect(context.Background(), *cfg.FlagDataBaseDSN)
+func DBConn() (conn *pgx.Conn, err error) {
+	conn, err = pgx.Connect(context.Background(), *cfg.FlagDataBaseDSN)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		//os.Exit(1)
-		return err
+		return conn, err
 	}
 	defer conn.Close(context.Background())
 	log.Println("Успешное подключение")
-	return err
+	return conn, err
 }

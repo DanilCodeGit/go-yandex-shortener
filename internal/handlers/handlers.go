@@ -1,3 +1,8 @@
+// Добавить функцию сохранения json в файле
+// По фиксить парс данных в JSONHandler
+// Добавить тесты
+// Исправить storage (Использовать структуру storage)
+
 package handlers
 
 import (
@@ -33,7 +38,7 @@ func saveDataToFile(data map[string]string, filePath string) error {
 
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		return err
+		fmt.Errorf("open file: %w", err)
 	}
 	defer file.Close()
 
@@ -43,14 +48,6 @@ func saveDataToFile(data map[string]string, filePath string) error {
 	}
 
 	return nil
-}
-func init() {
-	// Вызываем saveDataToFile один раз при инициализации приложения
-	err := saveDataToFile(st, *cfg.FlagFileStoragePath)
-	if err != nil {
-		fmt.Println("Failed to save initial data to file:", err)
-		os.Exit(1)
-	}
 }
 
 func HandlePost(w http.ResponseWriter, r *http.Request) {
@@ -162,7 +159,7 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandlePing(w http.ResponseWriter, r *http.Request) {
-	err := postgre.DBConn()
+	_, err := postgre.DBConn()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
