@@ -38,7 +38,7 @@ func saveDataToFile(data map[string]string, filePath string) error {
 
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		fmt.Errorf("open file: %w", err)
+		_ = fmt.Errorf("open file: %w", err)
 	}
 	defer file.Close()
 
