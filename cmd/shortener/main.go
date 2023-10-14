@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"strings"
@@ -15,11 +14,10 @@ import (
 )
 
 func main() {
-	conn, err := postgre.DBConn()
+	_, err := postgre.DBConn()
 	if err != nil {
 		log.Fatalf("Невозможно установить соединение с бд")
 	}
-	defer conn.Close(context.Background())
 
 	cfg.InitConfig()
 

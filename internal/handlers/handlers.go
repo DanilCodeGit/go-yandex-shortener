@@ -7,6 +7,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -159,8 +160,8 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandlePing(w http.ResponseWriter, r *http.Request) {
-	_, err := postgre.DBConn()
-	//defer conn.Close(context.Background())
+	conn, err := postgre.DBConn()
+	defer conn.Close(context.Background())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
