@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"log"
 	"net/http"
 	"strings"
 
@@ -13,7 +15,11 @@ import (
 )
 
 func main() {
-	postgre.DBConn()
+	conn, err := postgre.DBConn()
+	if err != nil {
+		log.Fatalf("Невозможно установить соединение с бд")
+	}
+	defer conn.Close(context.Background())
 
 	cfg.InitConfig()
 
@@ -27,7 +33,7 @@ func main() {
 	r.Post("/", loggerPost.ServeHTTP)
 	r.Post("/api/shorten", loggerJSONHandler.ServeHTTP)
 
-	err := http.ListenAndServe(*cfg.FlagServerAddress, r)
+	err = http.ListenAndServe(*cfg.FlagServerAddress, r)
 	if err != nil {
 		panic(err)
 	}
