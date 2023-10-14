@@ -17,7 +17,7 @@ func DBConn() (conn *pgx.Conn, err error) {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		return conn, err
 	}
-	defer conn.Close(context.Background())
+
 	log.Println("Успешное подключение")
 	return conn, err
 }
