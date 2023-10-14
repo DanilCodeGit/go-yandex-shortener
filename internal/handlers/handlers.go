@@ -120,9 +120,9 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		return
 	}
 	var url string
-	for k, fullUrl := range st {
+	for k, fullURL := range st {
 		delete(st, k)
-		url = fullUrl
+		url = fullURL
 	}
 
 	shortURL := tools.HashURL(url)
