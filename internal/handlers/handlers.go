@@ -7,7 +7,6 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -180,7 +179,7 @@ func HandlePing(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Fatalf("Хэндлер не может подключиться к бд")
 	}
-	defer conn.Close(context.Background())
+	defer conn.Close()
 	w.Header().Set("Location", "Success")
 	w.WriteHeader(http.StatusOK)
 

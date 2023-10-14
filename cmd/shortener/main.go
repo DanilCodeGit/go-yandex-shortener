@@ -13,19 +13,6 @@ import (
 
 func main() {
 
-	//// Вызываем функцию подключения к базе данных
-	//conn, err := postgre.DBConn()
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	////defer conn.Close(context.Background())
-	//
-	//// Вызываем функцию создания таблицы
-	//err = postgre.CreateTable(conn)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-
 	cfg.InitConfig()
 
 	r := chi.NewRouter()
