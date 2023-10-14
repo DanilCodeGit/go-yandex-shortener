@@ -17,7 +17,7 @@ func DBConn() (conn *pgxpool.Pool, err error) {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v", err)
 		return conn, err
 	}
-	//defer conn.Close(context.Background())
+	//defer conn.Close()
 	log.Println("Успешное подключение")
 	return conn, err
 }

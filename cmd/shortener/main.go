@@ -17,7 +17,7 @@ func main() {
 
 	r := chi.NewRouter()
 	loggerGetPing := logger.WithLogging(gzipMiddleware(handlers.HandlePing))
-	loggerGet := logger.WithLogging(http.HandlerFunc(handlers.HandleGet))
+	loggerGet := logger.WithLogging(gzipMiddleware(handlers.HandleGet))
 	loggerPost := logger.WithLogging(gzipMiddleware(handlers.HandlePost))
 	loggerJSONHandler := logger.WithLogging(gzipMiddleware(handlers.JSONHandler))
 	r.Get("/ping", loggerGetPing.ServeHTTP)
