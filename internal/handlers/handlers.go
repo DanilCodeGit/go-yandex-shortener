@@ -1,5 +1,4 @@
 // Добавить функцию сохранения json в файле
-// По фиксить парс данных в JSONHandler
 // Добавить тесты
 // Исправить storage (Использовать структуру storage)
 
@@ -39,7 +38,7 @@ func saveDataToFile(data map[string]string, filePath string) error {
 
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		_ = fmt.Errorf("open file: %w", err)
+		return err
 	}
 	defer file.Close()
 
@@ -47,7 +46,6 @@ func saveDataToFile(data map[string]string, filePath string) error {
 	if err := encoder.Encode(jsonData); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -65,9 +63,9 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	url := string(body)
 
-	ShortURL := tools.HashURL(url)
+	shortURL := tools.HashURL(url)
 	mu.Lock()
-	st[ShortURL] = url
+	st[shortURL] = url
 	mu.Unlock()
 
 	// Преобразование данных в формат JSON
@@ -86,8 +84,8 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("База не создана")
 	}
-
-	err = postgre.SaveShortenedURL(conn, st[ShortURL], ShortURL)
+	// Сохраняем запрос в бд
+	err = postgre.SaveShortenedURL(conn, st[shortURL], shortURL)
 	if err != nil {
 		log.Println("Запись не произошла")
 	}
@@ -101,7 +99,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, ShortURL)
+	fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
 	if err != nil {
 		return
 	}
@@ -109,7 +107,6 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
-
 	var buf bytes.Buffer
 	// читаем тело запроса
 	_, err := buf.ReadFrom(req.Body)
@@ -122,30 +119,47 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	url, found := st["url"]
-	if !found {
-		http.Error(w, "Missing 'url' field in JSON", http.StatusBadRequest)
-		return
+	var url string
+	for k, fullUrl := range st {
+		delete(st, k)
+		url = fullUrl
 	}
+
 	shortURL := tools.HashURL(url)
 	st[shortURL] = url
+
+	newData := make(map[string]string)
+	mu.Lock()
+	var full string
+	for shortURL, originalURL := range st {
+		newData[shortURL] = originalURL
+		full = originalURL
+	}
 
 	shortURL = "http://localhost:8080" + "/" + shortURL
 	responseData := map[string]string{"result": shortURL}
 	responseJSON, _ := json.Marshal(responseData)
 
-	jsonData := make(map[string]string)
-	mu.Lock()
-	for shortURL, originalURL := range st {
-		jsonData[shortURL] = originalURL
-	}
 	mu.Unlock()
-
 	// Сохранение данных в файл после обновления
-	err = saveDataToFile(jsonData, *cfg.FlagFileStoragePath)
+	err = saveDataToFile(newData, *cfg.FlagFileStoragePath)
 	if err != nil {
 		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
 		return
+	}
+	////
+	conn, err := postgre.DBConn()
+	if err != nil {
+		log.Println("Неудачное подключение")
+	}
+	err = postgre.CreateTable(conn)
+	if err != nil {
+		log.Println("База не создана")
+	}
+	// Сохраняем запрос в бд
+	err = postgre.SaveShortenedURL(conn, full, shortURL)
+	if err != nil {
+		log.Println("Запись не произошла")
 	}
 
 	w.Header().Set("Content-Type", "application/json")

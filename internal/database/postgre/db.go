@@ -38,12 +38,3 @@ func SaveShortenedURL(conn *pgxpool.Pool, originalURL, shortURL string) error {
 	_, err := conn.Exec(context.Background(), "INSERT INTO short_urls (original_url, short_url) VALUES ($1, $2)", originalURL, shortURL)
 	return err
 }
-
-//func GetShortenedURL(conn *pgx.Conn, id int) (string, error) {
-//	var shortURL string
-//	err := conn.QueryRow(context.Background(), "SELECT short_url FROM short_urls WHERE id = $1", id).Scan(&shortURL)
-//	if err != nil {
-//		return "", err
-//	}
-//	return shortURL, nil
-//}
