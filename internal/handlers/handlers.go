@@ -169,5 +169,5 @@ func HandlePing(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close(context.Background())
 	w.Header().Set("Location", "Success")
 	w.WriteHeader(http.StatusOK)
-	//fmt.Fprintf(w, "Запрос успешно выполнен")
+
 }
