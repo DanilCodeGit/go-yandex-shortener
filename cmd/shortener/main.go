@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"strings"
@@ -20,7 +19,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer conn.Close(context.Background())
+	//defer conn.Close(context.Background())
 
 	// Вызываем функцию создания таблицы
 	err = postgre.CreateTable(conn)
