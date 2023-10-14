@@ -80,7 +80,9 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	mu.Unlock()
 
 	conn, err := postgre.DBConn()
-	defer conn.Close(context.Background())
+	if err != nil {
+		log.Println("Неудачное подключение")
+	}
 	err = postgre.CreateTable(conn)
 	if err != nil {
 		log.Println("База не создана")
