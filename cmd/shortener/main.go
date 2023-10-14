@@ -6,13 +6,13 @@ import (
 
 	"github.com/DanilCodeGit/go-yandex-shortener/cmd/shortener/gzip"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
-	"github.com/DanilCodeGit/go-yandex-shortener/internal/database/postgre"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/handlers"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/logger"
 	"github.com/go-chi/chi/v5"
 )
 
 func main() {
+
 	//// Вызываем функцию подключения к базе данных
 	//conn, err := postgre.DBConn()
 	//if err != nil {
@@ -25,7 +25,6 @@ func main() {
 	//if err != nil {
 	//	log.Fatal(err)
 	//}
-	postgre.DBConn()
 
 	cfg.InitConfig()
 
