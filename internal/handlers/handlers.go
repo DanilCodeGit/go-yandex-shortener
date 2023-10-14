@@ -168,4 +168,5 @@ func HandlePing(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Location", "Success")
 	w.WriteHeader(http.StatusOK)
+	//fmt.Fprintf(w, "Запрос успешно выполнен")
 }
