@@ -80,6 +80,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("Неудачное подключение")
 	}
+	defer conn.Close()
 	err = postgre.CreateTable(conn)
 	if err != nil {
 		log.Println("База не создана")
@@ -152,6 +153,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	if err != nil {
 		log.Println("Неудачное подключение")
 	}
+	defer conn.Close()
 	err = postgre.CreateTable(conn)
 	if err != nil {
 		log.Println("База не создана")
