@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -161,11 +162,11 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 
 func HandlePing(w http.ResponseWriter, r *http.Request) {
 	conn, err := postgre.DBConn()
-	defer conn.Close(context.Background())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		return
+		log.Fatalf("Хэндлер не может подключиться к бд")
 	}
+	defer conn.Close(context.Background())
 	w.Header().Set("Location", "Success")
 	w.WriteHeader(http.StatusOK)
 	//fmt.Fprintf(w, "Запрос успешно выполнен")
