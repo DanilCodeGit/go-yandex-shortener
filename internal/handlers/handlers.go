@@ -79,6 +79,18 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	}
 	mu.Unlock()
 
+	conn, err := postgre.DBConn()
+	defer conn.Close(context.Background())
+	err = postgre.CreateTable(conn)
+	if err != nil {
+		log.Println("База не создана")
+	}
+
+	err = postgre.SaveShortenedURL(conn, st[ShortURL], ShortURL)
+	if err != nil {
+		log.Println("Запись не произошла")
+	}
+
 	// Сохранение данных в файл после обновления
 	err = saveDataToFile(jsonData, *cfg.FlagFileStoragePath)
 	if err != nil {

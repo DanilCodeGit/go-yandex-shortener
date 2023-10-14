@@ -17,16 +17,15 @@ func DBConn() (conn *pgx.Conn, err error) {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		return conn, err
 	}
-	defer conn.Close(context.Background())
+	//defer conn.Close(context.Background())
 	log.Println("Успешное подключение")
 	return conn, err
 }
 
 func CreateTable(conn *pgx.Conn) error {
 	createTable := `CREATE TABLE IF NOT EXISTS short_urls (
-    id int primary key,
-    original_url TEXT NOT NULL,
-    short_url VARCHAR(255) NOT NULL
+   original_url TEXT NOT NULL,
+   short_url VARCHAR(255) NOT NULL
 )`
 	_, err := conn.Exec(context.Background(), createTable)
 	if err != nil {
@@ -40,11 +39,11 @@ func SaveShortenedURL(conn *pgx.Conn, originalURL, shortURL string) error {
 	return err
 }
 
-func GetShortenedURL(conn *pgx.Conn, id int) (string, error) {
-	var shortURL string
-	err := conn.QueryRow(context.Background(), "SELECT short_url FROM short_urls WHERE id = $1", id).Scan(&shortURL)
-	if err != nil {
-		return "", err
-	}
-	return shortURL, nil
-}
+//func GetShortenedURL(conn *pgx.Conn, id int) (string, error) {
+//	var shortURL string
+//	err := conn.QueryRow(context.Background(), "SELECT short_url FROM short_urls WHERE id = $1", id).Scan(&shortURL)
+//	if err != nil {
+//		return "", err
+//	}
+//	return shortURL, nil
+//}
