@@ -20,10 +20,12 @@ func main() {
 	loggerGet := logger.WithLogging(gzipMiddleware(handlers.HandleGet))
 	loggerPost := logger.WithLogging(gzipMiddleware(handlers.HandlePost))
 	loggerJSONHandler := logger.WithLogging(gzipMiddleware(handlers.JSONHandler))
+	loggerMultipleRequestHandler := logger.WithLogging(gzipMiddleware(handlers.MultipleRequestHandler))
 	r.Get("/ping", loggerGetPing.ServeHTTP)
 	r.Get("/{id}", loggerGet.ServeHTTP)
 	r.Post("/", loggerPost.ServeHTTP)
 	r.Post("/api/shorten", loggerJSONHandler.ServeHTTP)
+	r.Post("/api/shorten/batch", loggerMultipleRequestHandler.ServeHTTP)
 
 	err := http.ListenAndServe(*cfg.FlagServerAddress, r)
 	if err != nil {

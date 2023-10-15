@@ -124,7 +124,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Println("1: ", st)
+
 	url, found := st["url"]
 	if !found {
 		http.Error(w, "Missing 'url' field in JSON", http.StatusBadRequest)
@@ -146,7 +146,13 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		jsonData[shortURL] = originalURL
 	}
 	mu.Unlock()
-	fmt.Println("2: ", st)
+
+	// Сохранение данных в файл после обновления
+	err = saveDataToFile(jsonData, *cfg.FlagFileStoragePath)
+	if err != nil {
+		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
+		return
+	}
 	////////////////////// DATABASE
 	conn, err := postgre.DBConn()
 	if err != nil {
@@ -163,17 +169,57 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	}
 	///////////////////////
 
-	// Сохранение данных в файл после обновления
-	err = saveDataToFile(jsonData, *cfg.FlagFileStoragePath)
-	if err != nil {
-		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
-		return
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "%v", string(responseJSON))
 
+}
+
+type Multi struct {
+	CorrelationId string `json:"correlation_Id"`
+	OriginalUrl   string `json:"original_url"`
+}
+
+func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
+	var m []Multi
+	var buf bytes.Buffer
+
+	_, err := buf.ReadFrom(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err = json.Unmarshal(buf.Bytes(), &m); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	type ShortenStruct struct {
+		CorrelationId string `json:"correlation_Id"`
+		ShortUrl      string `json:"short_url"`
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	for _, item := range m {
+		hash := tools.HashURL(item.OriginalUrl)
+		shortURL := hash
+
+		shortenData := ShortenStruct{
+			CorrelationId: item.CorrelationId,
+			ShortUrl:      shortURL,
+		}
+
+		shortenJSON, err := json.Marshal(shortenData)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		fmt.Fprintln(w, string(shortenJSON))
+	}
 }
 
 func HandleGet(w http.ResponseWriter, r *http.Request) {

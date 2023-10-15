@@ -35,6 +35,7 @@ func CreateTable(conn *pgxpool.Pool) error {
 }
 
 func SaveShortenedURL(conn *pgxpool.Pool, originalURL, shortURL string) error {
+
 	_, err := conn.Exec(context.Background(), "INSERT INTO short_urls (original_url, short_url) VALUES ($1, $2)", originalURL, shortURL)
 	return err
 }
