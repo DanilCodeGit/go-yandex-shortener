@@ -205,7 +205,7 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 	for _, item := range m {
 		// Создаем хеш SHA-256 от OriginalUrl
 		hash := tools.HashURL(item.OriginalURL)
-		shortURL := hash
+		shortURL := "http://localhost:8080" + "/" + hash
 		shortenData = append(shortenData, ShortenStruct{
 			CorrelationID: item.CorrelationID,
 			ShortURL:      shortURL,
