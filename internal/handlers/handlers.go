@@ -238,10 +238,7 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 	}
 	id := parts[1]
 	mu.Lock()
-	originalURL, exists := storage.URLStore[id]
-	if !exists {
-		log.Printf("OriginalUrl не найден: %v", http.StatusNotFound)
-	}
+	originalURL := storage.URLStore[id]
 	mu.Unlock()
 
 	w.Header().Set("Location", originalURL)
