@@ -140,15 +140,15 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	responseData := map[string]string{"result": shortURL}
 	responseJSON, _ := json.Marshal(responseData)
 
-	jsonData := make(map[string]string)
+	newData := make(map[string]string)
 	mu.Lock()
 	for shortURL, originalURL := range st {
-		jsonData[shortURL] = originalURL
+		newData[shortURL] = originalURL
 	}
 	mu.Unlock()
 
 	// Сохранение данных в файл после обновления
-	err = saveDataToFile(jsonData, *cfg.FlagFileStoragePath)
+	err = saveDataToFile(newData, *cfg.FlagFileStoragePath)
 	if err != nil {
 		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
 		return
@@ -220,6 +220,38 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	newData := make(map[string]string)
+	mu.Lock()
+	for shortURL, originalURL := range st {
+		newData[shortURL] = originalURL
+	}
+	mu.Unlock()
+
+	// Сохранение данных в файл после обновления
+	err = saveDataToFile(newData, *cfg.FlagFileStoragePath)
+	if err != nil {
+		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
+		return
+	}
+
+	////////////////////// DATABASE
+	conn, err := postgre.DBConn()
+	if err != nil {
+		log.Println("Неудачное подключение")
+	}
+	err = postgre.CreateTable(conn)
+	if err != nil {
+		log.Println("База не создана")
+	}
+	for shortURL, originalURL := range newData {
+		err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
+		if err != nil {
+			log.Println("Запись не произошла")
+		}
+	}
+
+	///////////////////////
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
