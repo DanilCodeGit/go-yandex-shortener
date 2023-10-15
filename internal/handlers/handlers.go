@@ -70,7 +70,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	st[ShortURL] = url
 	mu.Unlock()
 
-	// Преобразование данных в формат JSON.
+	// Преобразование данных в формат JSON
 	jsonData := make(map[string]string)
 	mu.Lock()
 	for shortURL, originalURL := range st {
