@@ -108,88 +108,6 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
-	var buf bytes.Buffer
-	// читаем тело запроса
-	_, err := buf.ReadFrom(req.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	// Десереализуем json
-	if err = json.Unmarshal(buf.Bytes(), &st); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	newData := make(map[string]string)
-	for _, v := range st {
-		newData[v] = v
-	}
-	hashedData := make(map[string]string)
-	for k, v := range newData {
-		hashedKey := tools.HashURL(k)
-		hashedData[hashedKey] = v
-	}
-	var shortURL, originalURL string
-	for i, v := range hashedData {
-		shortURL = i
-		originalURL = v
-		st[v] = i
-	}
-	shortURL = "http://localhost:8080" + "/" + shortURL
-	responseData := map[string]string{"result": shortURL}
-	responseJSON, _ := json.Marshal(responseData)
-
-<<<<<<< HEAD
-	conn, err := postgre.DBConn()
-	if err != nil {
-		log.Println("Неудачное подключение")
-	}
-	err = postgre.CreateTable(conn)
-	if err != nil {
-		log.Println("База не создана")
-	}
-
-	err = postgre.SaveShortenedURL(conn, st[shortURL], shortURL)
-	if err != nil {
-		log.Println("Запись не произошла")
-	}
-
-	jsonData := make(map[string]string)
-	mu.Lock()
-	for shortURL, originalURL := range st {
-		jsonData[shortURL] = originalURL
-	}
-	mu.Unlock()
-
-=======
->>>>>>> d602985c67295b09b6c625355536709749448bce
-	// Сохранение данных в файл после обновления
-	err = saveDataToFile(hashedData, *cfg.FlagFileStoragePath)
-	if err != nil {
-		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
-		return
-	}
-	////
-	conn, err := postgre.DBConn()
-	if err != nil {
-		log.Println("Неудачное подключение")
-	}
-
-	err = postgre.CreateTable(conn)
-	if err != nil {
-		log.Println("База не создана")
-	}
-	// Сохраняем запрос в бд
-	err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
-	if err != nil {
-		log.Println("Запись не произошла")
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, "%v", string(responseJSON))
-
 	//var buf bytes.Buffer
 	//// читаем тело запроса
 	//_, err := buf.ReadFrom(req.Body)
@@ -202,30 +120,51 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	//	http.Error(w, err.Error(), http.StatusBadRequest)
 	//	return
 	//}
-	//var url string
-	//for k, fullURL := range st {
-	//	delete(st, k)
-	//	url = fullURL
-	//}
-	//
-	//shortURL := tools.HashURL(url)
-	//st[shortURL] = url
 	//
 	//newData := make(map[string]string)
-	//mu.Lock()
-	//var full string
-	//for shortURL, originalURL := range st {
-	//	newData[shortURL] = originalURL
-	//	full = originalURL
+	//for _, v := range st {
+	//	newData[v] = v
 	//}
-	//
+	//hashedData := make(map[string]string)
+	//for k, v := range newData {
+	//	hashedKey := tools.HashURL(k)
+	//	hashedData[hashedKey] = v
+	//}
+	//var shortURL, originalURL string
+	//for i, v := range hashedData {
+	//	shortURL = i
+	//	originalURL = v
+	//	st[v] = i
+	//}
 	//shortURL = "http://localhost:8080" + "/" + shortURL
 	//responseData := map[string]string{"result": shortURL}
 	//responseJSON, _ := json.Marshal(responseData)
 	//
-	//mu.Unlock()
+	////
+	////	conn, err := postgre.DBConn()
+	////	if err != nil {
+	////		log.Println("Неудачное подключение")
+	////	}
+	////	err = postgre.CreateTable(conn)
+	////	if err != nil {
+	////		log.Println("База не создана")
+	////	}
+	////
+	////	err = postgre.SaveShortenedURL(conn, st[shortURL], shortURL)
+	////	if err != nil {
+	////		log.Println("Запись не произошла")
+	////	}
+	////
+	////	jsonData := make(map[string]string)
+	////	mu.Lock()
+	////	for shortURL, originalURL := range st {
+	////		jsonData[shortURL] = originalURL
+	////	}
+	////	mu.Unlock()
+	//
+	////
 	//// Сохранение данных в файл после обновления
-	//err = saveDataToFile(newData, *cfg.FlagFileStoragePath)
+	//err = saveDataToFile(hashedData, *cfg.FlagFileStoragePath)
 	//if err != nil {
 	//	http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
 	//	return
@@ -241,7 +180,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	//	log.Println("База не создана")
 	//}
 	//// Сохраняем запрос в бд
-	//err = postgre.SaveShortenedURL(conn, full, shortURL)
+	//err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
 	//if err != nil {
 	//	log.Println("Запись не произошла")
 	//}
@@ -249,6 +188,66 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	//w.Header().Set("Content-Type", "application/json")
 	//w.WriteHeader(http.StatusCreated)
 	//fmt.Fprintf(w, "%v", string(responseJSON))
+
+	var buf bytes.Buffer
+	// читаем тело запроса
+	_, err := buf.ReadFrom(req.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// Десереализуем json
+	if err = json.Unmarshal(buf.Bytes(), &st); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	var url string
+	for k, fullURL := range st {
+		delete(st, k)
+		url = fullURL
+	}
+
+	shortURL := tools.HashURL(url)
+	st[shortURL] = url
+
+	newData := make(map[string]string)
+	mu.Lock()
+	var full string
+	for shortURL, originalURL := range st {
+		newData[shortURL] = originalURL
+		full = originalURL
+	}
+
+	shortURL = "http://localhost:8080" + "/" + shortURL
+	responseData := map[string]string{"result": shortURL}
+	responseJSON, _ := json.Marshal(responseData)
+
+	mu.Unlock()
+	// Сохранение данных в файл после обновления
+	err = saveDataToFile(newData, *cfg.FlagFileStoragePath)
+	if err != nil {
+		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
+		return
+	}
+	////
+	conn, err := postgre.DBConn()
+	if err != nil {
+		log.Println("Неудачное подключение")
+	}
+
+	err = postgre.CreateTable(conn)
+	if err != nil {
+		log.Println("База не создана")
+	}
+	// Сохраняем запрос в бд
+	err = postgre.SaveShortenedURL(conn, full, shortURL)
+	if err != nil {
+		log.Println("Запись не произошла")
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	fmt.Fprintf(w, "%v", string(responseJSON))
 
 }
 
