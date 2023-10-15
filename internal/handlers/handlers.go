@@ -134,6 +134,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	for i, v := range hashedData {
 		shortURL = i
 		originalURL = v
+		st[i] = v
 	}
 	shortURL = "http://localhost:8080" + "/" + shortURL
 	responseData := map[string]string{"result": shortURL}
@@ -238,7 +239,7 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 	}
 	id := parts[1]
 	mu.Lock()
-	originalURL := storage.URLStore[id]
+	originalURL := st[id]
 	mu.Unlock()
 
 	w.Header().Set("Location", originalURL)
