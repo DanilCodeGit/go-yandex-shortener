@@ -31,7 +31,7 @@ type URLData struct {
 }
 
 func saveDataToFile(data map[string]string, filePath string) error {
-	// Преобразуем данные в формат URLData
+
 	var jsonData []URLData
 	for shortURL, originalURL := range data {
 		jsonData = append(jsonData, URLData{ShortURL: shortURL, OriginalURL: originalURL})
