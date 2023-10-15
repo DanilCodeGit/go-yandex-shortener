@@ -12,13 +12,14 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
+	//"strings"
 	"sync"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/database/postgre"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/storage"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/tools"
+	"github.com/go-chi/chi/v5"
 )
 
 var st = storage.URLStore
@@ -170,21 +171,24 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 }
 
 func HandleGet(w http.ResponseWriter, r *http.Request) {
-	// Разбить путь запроса на части
-	parts := strings.Split(r.URL.Path, "/")
+	id := chi.URLParam(r, "id")
 
-	// Извлечь значение {id}
-	if len(parts) < 2 || parts[1] == "" {
-		http.Error(w, "Некорректный запрос", http.StatusBadRequest)
-		return
-	}
-	id := parts[1]
+	//// Разбить путь запроса на части
+	//parts := strings.Split(r.URL.Path, "/")
+	//
+	//// Извлечь значение {id}
+	//if len(parts) < 2 || parts[1] == "" {
+	//	http.Error(w, "Некорректный запрос", http.StatusBadRequest)
+	//	return
+	//}
+	//id := parts[1]
 	mu.Lock()
 	originalURL := storage.URLStore[id]
 	mu.Unlock()
 
 	w.Header().Set("Location", originalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
+	fmt.Sprintf("Оригинальный url: %s\n", originalURL)
 
 }
 
