@@ -78,6 +78,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	}
 	mu.Unlock()
 
+	////////////////////// DATABASE
 	conn, err := postgre.DBConn()
 	if err != nil {
 		log.Println("Неудачное подключение")
@@ -91,6 +92,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("Запись не произошла")
 	}
+	///////////////////////
 
 	// Сохранение данных в файл после обновления
 	err = saveDataToFile(jsonData, *cfg.FlagFileStoragePath)
@@ -122,13 +124,17 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	fmt.Println("1: ", st)
 	url, found := st["url"]
 	if !found {
 		http.Error(w, "Missing 'url' field in JSON", http.StatusBadRequest)
 		return
 	}
 	shortURL := tools.HashURL(url)
+
 	st[shortURL] = url
+	originalURL := st[shortURL]
+	delete(st, "url")
 
 	shortURL = "http://localhost:8080" + "/" + shortURL
 	responseData := map[string]string{"result": shortURL}
@@ -140,6 +146,22 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		jsonData[shortURL] = originalURL
 	}
 	mu.Unlock()
+	fmt.Println("2: ", st)
+	////////////////////// DATABASE
+	conn, err := postgre.DBConn()
+	if err != nil {
+		log.Println("Неудачное подключение")
+	}
+	err = postgre.CreateTable(conn)
+	if err != nil {
+		log.Println("База не создана")
+	}
+
+	err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
+	if err != nil {
+		log.Println("Запись не произошла")
+	}
+	///////////////////////
 
 	// Сохранение данных в файл после обновления
 	err = saveDataToFile(jsonData, *cfg.FlagFileStoragePath)
