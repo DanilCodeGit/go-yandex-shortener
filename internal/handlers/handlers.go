@@ -176,8 +176,8 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 }
 
 type Multi struct {
-	CorrelationId string `json:"correlation_Id"`
-	OriginalUrl   string `json:"original_url"`
+	CorrelationID string `json:"correlation_Id"`
+	OriginalURL   string `json:"original_url"`
 }
 
 func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
@@ -196,8 +196,8 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type ShortenStruct struct {
-		CorrelationId string `json:"correlation_id"`
-		ShortUrl      string `json:"short_url"`
+		CorrelationID string `json:"correlation_id"`
+		ShortURL      string `json:"short_url"`
 	}
 
 	var shortenData []ShortenStruct
