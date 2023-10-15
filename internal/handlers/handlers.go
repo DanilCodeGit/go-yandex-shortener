@@ -196,30 +196,31 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type ShortenStruct struct {
-		CorrelationId string `json:"correlation_Id"`
+		CorrelationId string `json:"correlation_id"`
 		ShortUrl      string `json:"short_url"`
+	}
+
+	var shortenData []ShortenStruct
+
+	for _, item := range m {
+		// Создаем хеш SHA-256 от OriginalUrl
+		hash := tools.HashURL(item.OriginalUrl)
+		shortURL := hash
+		shortenData = append(shortenData, ShortenStruct{
+			CorrelationId: item.CorrelationId,
+			ShortUrl:      shortURL,
+		})
+	}
+
+	shortenJSON, err := json.Marshal(shortenData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-
-	for _, item := range m {
-		hash := tools.HashURL(item.OriginalUrl)
-		shortURL := hash
-
-		shortenData := ShortenStruct{
-			CorrelationId: item.CorrelationId,
-			ShortUrl:      shortURL,
-		}
-
-		shortenJSON, err := json.Marshal(shortenData)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		fmt.Fprintln(w, string(shortenJSON))
-	}
+	w.Write(shortenJSON)
 }
 
 func HandleGet(w http.ResponseWriter, r *http.Request) {
