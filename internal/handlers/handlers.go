@@ -134,6 +134,20 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	responseData := map[string]string{"result": shortURL}
 	responseJSON, _ := json.Marshal(responseData)
 
+	conn, err := postgre.DBConn()
+	if err != nil {
+		log.Println("Неудачное подключение")
+	}
+	err = postgre.CreateTable(conn)
+	if err != nil {
+		log.Println("База не создана")
+	}
+
+	err = postgre.SaveShortenedURL(conn, st[shortURL], shortURL)
+	if err != nil {
+		log.Println("Запись не произошла")
+	}
+
 	jsonData := make(map[string]string)
 	mu.Lock()
 	for shortURL, originalURL := range st {
