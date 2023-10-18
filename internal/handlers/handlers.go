@@ -84,12 +84,10 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 		log.Println("База не создана")
 	}
 
-	defer func(conn *pgxpool.Pool) {
-		err := postgre.DeleteAllRecords(conn)
-		if err != nil {
-			log.Println("Не удалось удалить записи")
-		}
-	}(conn)
+	err = postgre.DeleteAllRecords(conn)
+	if err != nil {
+		log.Println("Не удалось удалить записи")
+	}
 
 	err = postgre.CheckDuplicate(ctx, conn, url)
 	if err != nil {
@@ -285,7 +283,7 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 			log.Println("Не удалось удалить записи")
 		}
 	}(conn)
-	
+
 	for shortURL, originalURL := range newData {
 		err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
 		if err != nil {
