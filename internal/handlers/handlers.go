@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
@@ -23,9 +22,6 @@ import (
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/storage"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/tools"
 )
-
-var st = storage.URLStore
-var mu sync.Mutex
 
 type URLData struct {
 	ShortURL    string `json:"short_url"`
@@ -54,6 +50,7 @@ func saveDataToFile(data map[string]string, filePath string) error {
 }
 
 func HandlePost(w http.ResponseWriter, r *http.Request) {
+	st := storage.NewStorage()
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
 	body, err := io.ReadAll(r.Body)
@@ -68,18 +65,15 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	url := string(body)
 
-	ShortURL := tools.HashURL(url)
-	mu.Lock()
-	st[ShortURL] = url
-	mu.Unlock()
+	shortURL := tools.HashURL(url)
+	st.SetURL(shortURL, url)
+	//st[shortURL] = url
 
 	// Преобразование данных в формат JSON
 	jsonData := make(map[string]string)
-	mu.Lock()
-	for shortURL, originalURL := range st {
+	for shortURL, originalURL := range st.URLsStore {
 		jsonData[shortURL] = originalURL
 	}
-	mu.Unlock()
 
 	////////////////////// DATABASE
 
@@ -96,8 +90,11 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusConflict)
 	}
-
-	err = postgre.SaveShortenedURL(conn, st[ShortURL], ShortURL)
+	originalURL, exists := st.GetURL(shortURL)
+	if !exists {
+		log.Println("OriginalURL not found")
+	}
+	err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
 	if err != nil {
 		log.Println("Запись не произошла")
 	}
@@ -112,7 +109,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, ShortURL)
+	fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
 	if err != nil {
 		return
 	}
@@ -120,6 +117,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
+	st := storage.NewStorage()
 	ctx, cancel := context.WithTimeout(req.Context(), 3*time.Second)
 	defer cancel()
 	var buf bytes.Buffer
@@ -135,27 +133,31 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		return
 	}
 
-	url, found := st["url"]
+	//url, found := st["url"]
+	url, found := st.GetURL("url")
 	if !found {
 		http.Error(w, "Missing 'url' field in JSON", http.StatusBadRequest)
 		return
 	}
 	shortURL := tools.HashURL(url)
-
-	st[shortURL] = url
-	originalURL := st[shortURL]
-	delete(st, "url")
+	st.SetURL(shortURL, url)
+	//st[shortURL] = url
+	originalURL, exists := st.GetURL(shortURL)
+	if !exists {
+		log.Println("Original URL not found")
+	}
+	//originalURL := st[shortURL]
+	st.DeleteURL("url")
+	//delete(st, "url")
 
 	shortURL = "http://localhost:8080" + "/" + shortURL
 	responseData := map[string]string{"result": shortURL}
 	responseJSON, _ := json.Marshal(responseData)
 
 	newData := make(map[string]string)
-	mu.Lock()
-	for shortURL, originalURL := range st {
+	for shortURL, originalURL := range st.URLsStore {
 		newData[shortURL] = originalURL
 	}
-	mu.Unlock()
 
 	// Сохранение данных в файл после обновления
 	err = saveDataToFile(newData, *cfg.FlagFileStoragePath)
@@ -198,6 +200,7 @@ type Multi struct {
 }
 
 func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
+	st := storage.NewStorage()
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
 	var m []Multi
@@ -222,11 +225,12 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 	var shortenData []ShortenStruct
 
 	for _, item := range m {
-		// Создаем хеш SHA-256 от OriginalUrl
+
 		hash := tools.HashURL(item.OriginalURL)
 		tmp := hash
 		shortURL := "http://localhost:8080" + "/" + hash
-		st[tmp] = item.OriginalURL
+		st.SetURL(tmp, item.OriginalURL)
+		//st[tmp] = item.OriginalURL
 		shortenData = append(shortenData, ShortenStruct{
 			CorrelationID: item.CorrelationID,
 			ShortURL:      shortURL,
@@ -241,11 +245,10 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newData := make(map[string]string)
-	mu.Lock()
-	for shortURL, originalURL := range st {
+
+	for shortURL, originalURL := range st.URLsStore {
 		newData[shortURL] = originalURL
 	}
-	mu.Unlock()
 
 	// Сохранение данных в файл после обновления
 	err = saveDataToFile(newData, *cfg.FlagFileStoragePath)
@@ -278,6 +281,7 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleGet(w http.ResponseWriter, r *http.Request) {
+	st := storage.NewStorage()
 	// Разбить путь запроса на части
 	parts := strings.Split(r.URL.Path, "/")
 
@@ -287,9 +291,11 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	shortURL := parts[1]
-	mu.Lock()
-	originalURL := st[shortURL]
-	mu.Unlock()
+	originalURL, exists := st.GetURL(shortURL)
+	if !exists {
+		log.Println("OriginalURl not found")
+	}
+	//originalURL := st[shortURL]
 
 	w.Header().Set("Location", originalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
