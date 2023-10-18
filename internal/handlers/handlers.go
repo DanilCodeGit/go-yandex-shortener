@@ -84,15 +84,15 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 		log.Println("База не создана")
 	}
 
-	err = postgre.DeleteAllRecords(conn)
-	if err != nil {
-		log.Println("Не удалось удалить записи")
-	}
-
 	err = postgre.CheckDuplicate(ctx, conn, url)
 	if err != nil {
 		w.WriteHeader(http.StatusConflict)
 	}
+	//err = postgre.DeleteAllRecords(conn)
+	//if err != nil {
+	//	log.Println("Не удалось удалить записи")
+	//}
+
 	originalURL, exists := st.GetURL(shortURL)
 	if !exists {
 		log.Println("OriginalURL not found")
@@ -149,9 +149,8 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	if !exists {
 		log.Println("Original URL not found")
 	}
-	//originalURL := st[shortURL]
+
 	st.DeleteURL("url")
-	//delete(st, "url")
 
 	shortURL = "http://localhost:8080" + "/" + shortURL
 	responseData := map[string]string{"result": shortURL}
@@ -178,19 +177,17 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		log.Println("База не создана")
 	}
 
-	defer func(conn *pgxpool.Pool) {
-		err := postgre.DeleteAllRecords(conn)
-		if err != nil {
-			log.Println("Не удалось удалить записи")
-		}
-	}(conn)
-
 	err = postgre.CheckDuplicate(ctx, conn, originalURL)
 	if err != nil {
 		w.WriteHeader(http.StatusConflict)
 		fmt.Fprint(w, string(responseJSON))
 		return
 	}
+
+	//err = postgre.DeleteAllRecords(conn)
+	//if err != nil {
+	//	log.Println("Не удалось удалить записи")
+	//}
 
 	err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
 	if err != nil {
