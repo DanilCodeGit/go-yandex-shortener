@@ -55,11 +55,8 @@ func CheckDuplicate(ctx context.Context, conn *pgxpool.Pool, originalURL string)
 }
 
 func DeleteAllRecords(conn *pgxpool.Pool) error {
-	// SQL-запрос для удаления всех записей из таблицы
-	query := fmt.Sprintf("DELETE FROM short_urls")
-
 	// Непосредственно выполняем SQL-запрос
-	var _, err = conn.Exec(context.Background(), query)
+	var _, err = conn.Exec(context.Background(), `DELETE FROM short_urls`)
 	if err != nil {
 		return err
 	}
