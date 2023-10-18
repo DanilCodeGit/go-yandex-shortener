@@ -176,11 +176,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	err = postgre.CheckDuplicate(ctx, conn, originalURL)
 	if err != nil {
 		w.WriteHeader(http.StatusConflict)
-		fprintf, err := fmt.Fprintf(w, shortURL)
-		if err != nil {
-			return
-		}
-		fmt.Print(fprintf)
+		fmt.Fprint(w, string(responseJSON))
 		return
 	}
 
