@@ -286,9 +286,9 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Некорректный запрос", http.StatusBadRequest)
 		return
 	}
-	id := parts[1]
+	shortURL := parts[1]
 	mu.Lock()
-	originalURL := storage.URLStore[id]
+	originalURL := st[shortURL]
 	mu.Unlock()
 
 	w.Header().Set("Location", originalURL)
