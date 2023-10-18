@@ -40,18 +40,6 @@ func SaveShortenedURL(conn *pgxpool.Pool, originalURL, shortURL string) error {
 	return err
 }
 func CheckDuplicate(ctx context.Context, conn *pgxpool.Pool, originalURL string) error {
-	//rows, err := conn.Query(ctx, `select original_url from short_urls`)
-	//for rows.Next() {
-	//	var dublicate string
-	//	err = rows.Scan(&dublicate)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	if dublicate == originalURL {
-	//		return fmt.Errorf("данный url уже существует в БД")
-	//	}
-	//}
-	//return err
 	query := "SELECT COUNT(*) FROM short_urls WHERE original_url = $1"
 	var count int
 	err := conn.QueryRow(ctx, query, originalURL).Scan(&count)
@@ -63,5 +51,19 @@ func CheckDuplicate(ctx context.Context, conn *pgxpool.Pool, originalURL string)
 		return fmt.Errorf("данный url уже существует в БД")
 	}
 
+	return nil
+}
+
+func DeleteAllRecords(conn *pgxpool.Pool) error {
+	// SQL-запрос для удаления всех записей из таблицы
+	query := fmt.Sprintf("DELETE FROM short_urls")
+
+	// Непосредственно выполняем SQL-запрос
+	var _, err = conn.Exec(context.Background(), query)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Все записи из таблицы удалены успешно.\n")
 	return nil
 }

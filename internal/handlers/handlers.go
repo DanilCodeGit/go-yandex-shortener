@@ -1,8 +1,5 @@
-// Добавить функцию сохранения json в файле
 // Добавить тесты
-// Исправить storage (Использовать структуру storage)
 
-// Работающий вариант
 package handlers
 
 import (
@@ -21,6 +18,7 @@ import (
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/database/postgre"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/storage"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/tools"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type URLData struct {
@@ -86,6 +84,13 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 		log.Println("База не создана")
 	}
 
+	defer func(conn *pgxpool.Pool) {
+		err := postgre.DeleteAllRecords(conn)
+		if err != nil {
+
+		}
+	}(conn)
+
 	err = postgre.CheckDuplicate(ctx, conn, url)
 	if err != nil {
 		w.WriteHeader(http.StatusConflict)
@@ -128,7 +133,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		return
 	}
 	// Десереализуем json
-	if err = json.Unmarshal(buf.Bytes(), &st); err != nil {
+	if err = json.Unmarshal(buf.Bytes(), &st.URLsStore); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -174,6 +179,13 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	if err != nil {
 		log.Println("База не создана")
 	}
+
+	defer func(conn *pgxpool.Pool) {
+		err := postgre.DeleteAllRecords(conn)
+		if err != nil {
+
+		}
+	}(conn)
 
 	err = postgre.CheckDuplicate(ctx, conn, originalURL)
 	if err != nil {
@@ -266,6 +278,12 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("База не создана")
 	}
+	defer func(conn *pgxpool.Pool) {
+		err := postgre.DeleteAllRecords(conn)
+		if err != nil {
+
+		}
+	}(conn)
 	for shortURL, originalURL := range newData {
 		err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
 		if err != nil {
@@ -295,8 +313,6 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 	if !exists {
 		log.Println("OriginalURl not found")
 	}
-	//originalURL := st[shortURL]
-
 	w.Header().Set("Location", originalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 
