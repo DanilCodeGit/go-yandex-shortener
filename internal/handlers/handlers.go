@@ -243,6 +243,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 
 		err = postgre.InsertURL(conn, url, shortURL)
 		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
 			fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
 			if err != nil {
