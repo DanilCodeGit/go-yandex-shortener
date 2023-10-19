@@ -85,7 +85,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	err = postgre.InsertURL(conn, url, shortURL)
 	if err != nil {
-		w.WriteHeader(http.StatusConflict)
+		//w.WriteHeader(http.StatusConflict)
 		fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
 		if err != nil {
 			return
