@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/database/postgre"
@@ -23,8 +22,7 @@ import (
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/tools"
 )
 
-var st = storage.URLStore
-var mu sync.Mutex
+var st = *storage.NewStorage()
 
 type URLData struct {
 	ShortURL    string `json:"short_url"`
@@ -66,18 +64,17 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	url := string(body)
 
-	ShortURL := tools.HashURL(url)
-	mu.Lock()
-	st[ShortURL] = url
-	mu.Unlock()
+	shortURL := tools.HashURL(url)
+
+	//st[ShortURL] = url
+	st.SetURL(shortURL, url)
 
 	// Преобразование данных в формат JSON
 	jsonData := make(map[string]string)
-	mu.Lock()
-	for shortURL, originalURL := range st {
+
+	for shortURL, originalURL := range st.URLsStore {
 		jsonData[shortURL] = originalURL
 	}
-	mu.Unlock()
 
 	////////////////////// DATABASE
 	conn, err := postgre.DBConn(context.Background())
@@ -89,7 +86,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 		log.Println("База не создана")
 	}
 
-	err = postgre.SaveShortenedURL(conn, st[ShortURL], ShortURL)
+	err = postgre.SaveShortenedURL(conn, url, shortURL)
 	if err != nil {
 		log.Println("Запись не произошла")
 	}
@@ -104,7 +101,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, ShortURL)
+	fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
 	if err != nil {
 		return
 	}
@@ -121,32 +118,36 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		return
 	}
 	// Десереализуем json
-	if err = json.Unmarshal(buf.Bytes(), &st); err != nil {
+	if err = json.Unmarshal(buf.Bytes(), &st.URLsStore); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	url, found := st["url"]
+	//url, found := st["url"]
+	url, found := st.GetURL("url")
 	if !found {
 		http.Error(w, "Missing 'url' field in JSON", http.StatusBadRequest)
 		return
 	}
 	shortURL := tools.HashURL(url)
 
-	st[shortURL] = url
-	originalURL := st[shortURL]
-	delete(st, "url")
+	//st[shortURL] = url
+	//originalURL := st[shortURL]
+	//delete(st, "url")
+	st.SetURL(shortURL, url)
+	originalURL, _ := st.GetURL(shortURL)
+
+	st.DeleteURL("url")
 
 	shortURL = "http://localhost:8080" + "/" + shortURL
 	responseData := map[string]string{"result": shortURL}
 	responseJSON, _ := json.Marshal(responseData)
 
 	newData := make(map[string]string)
-	mu.Lock()
-	for shortURL, originalURL := range st {
+
+	for shortURL, originalURL := range st.URLsStore {
 		newData[shortURL] = originalURL
 	}
-	mu.Unlock()
 
 	// Сохранение данных в файл после обновления
 	err = saveDataToFile(newData, *cfg.FlagFileStoragePath)
@@ -208,7 +209,8 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 		hash := tools.HashURL(item.OriginalURL)
 		tmp := hash
 		shortURL := "http://localhost:8080" + "/" + hash
-		st[tmp] = item.OriginalURL
+		st.SetURL(tmp, item.OriginalURL)
+		//st[tmp] = item.OriginalURL
 		shortenData = append(shortenData, ShortenStruct{
 			CorrelationID: item.CorrelationID,
 			ShortURL:      shortURL,
@@ -223,11 +225,10 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newData := make(map[string]string)
-	mu.Lock()
-	for shortURL, originalURL := range st {
+
+	for shortURL, originalURL := range st.URLsStore {
 		newData[shortURL] = originalURL
 	}
-	mu.Unlock()
 
 	// Сохранение данных в файл после обновления
 	err = saveDataToFile(newData, *cfg.FlagFileStoragePath)
@@ -270,9 +271,11 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 	}
 	id := parts[1]
 
-	originalURL := st[id]
+	//originalURL := st[id]
+	originalURL, _ := st.GetURL(id)
+
 	fmt.Println("orig: ", originalURL)
-	fmt.Println("st: ", st)
+	fmt.Println("st: ", st.URLsStore)
 	w.Header().Set("Location", originalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 
