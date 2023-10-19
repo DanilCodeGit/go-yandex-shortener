@@ -13,6 +13,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -275,10 +276,10 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 
 	//originalURL := st[id]
 	originalURL, _ := st.GetURL(id)
-
+	encodedURL := url.PathEscape(originalURL)
 	fmt.Println("orig: ", originalURL)
 	fmt.Println("st: ", st.URLsStore)
-	w.Header().Set("Location", originalURL)
+	w.Header().Set("Location", encodedURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 
 }
