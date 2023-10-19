@@ -1,6 +1,8 @@
 package storage
 
-import "sync"
+import (
+	"sync"
+)
 
 var URLStore = make(map[string]string)
 
@@ -22,9 +24,10 @@ func (s *Storage) SetURL(key, value string) {
 func (s *Storage) GetURL(key string) (string, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	value, _ := s.URLsStore[key]
+	value := s.URLsStore[key]
 	return value, true
 }
+
 func (s *Storage) DeleteURL(key string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

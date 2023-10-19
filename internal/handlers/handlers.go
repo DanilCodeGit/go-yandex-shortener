@@ -11,14 +11,13 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/database/postgre"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/storage"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/tools"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/go-chi/chi/v5"
 )
 
 type URLData struct {
@@ -66,13 +65,12 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	url := string(body)
 
 	shortURL := tools.HashURL(url)
-	st.SetURL(url, shortURL)
+	st.SetURL(shortURL, url)
 
 	// Преобразование данных в формат JSON
 	jsonData := make(map[string]string)
 	for shortURL, originalURL := range st.URLsStore {
 		jsonData[shortURL] = originalURL
-		fmt.Println(st.URLsStore)
 	}
 
 	////////////////////// DATABASE
@@ -86,15 +84,12 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 		log.Println("База не создана")
 	}
 	fmt.Println("url:", url)
+	fmt.Println("shortPOST:", shortURL)
 	err = postgre.CheckDuplicate(ctx, conn, url)
 	if err != nil {
 		w.WriteHeader(http.StatusConflict)
 	}
 
-	//originalURL, exists := st.GetURL(shortURL)
-	//if !exists {
-	//	log.Println("OriginalURL not found")
-	//}
 	err = postgre.SaveShortenedURL(conn, url, shortURL)
 	if err != nil {
 		log.Println("Запись не произошла")
@@ -107,7 +102,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
 		return
 	}
-
+	fmt.Println(st.URLsStore)
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 	fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
@@ -143,7 +138,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	st.SetURL(url, shortURL)
 
 	st.DeleteURL("url")
-
+	shortURLDB := shortURL
 	shortURL = "http://localhost:8080" + "/" + shortURL
 	responseData := map[string]string{"result": shortURL}
 	responseJSON, _ := json.Marshal(responseData)
@@ -159,6 +154,8 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
 		return
 	}
+	fmt.Println("url:", url)
+	fmt.Println("shortUrl:", shortURLDB)
 	////////////////////// DATABASE
 	conn, err := postgre.DBConn(ctx)
 	if err != nil {
@@ -175,7 +172,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		return
 	}
 
-	err = postgre.SaveShortenedURL(conn, url, shortURL)
+	err = postgre.SaveShortenedURL(conn, url, shortURLDB)
 	if err != nil {
 		log.Println("Запись не произошла")
 	}
@@ -259,12 +256,10 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("База не создана")
 	}
 
-	defer func(conn *pgxpool.Pool) {
-		err := postgre.DeleteAllRecords(conn)
-		if err != nil {
-			log.Println("Не удалось удалить записи")
-		}
-	}(conn)
+	err = postgre.DeleteAllRecords(conn)
+	if err != nil {
+		log.Println("Не удалось удалить записи")
+	}
 
 	for shortURL, originalURL := range newData {
 		err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
@@ -281,27 +276,40 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleGet(w http.ResponseWriter, r *http.Request) {
-	// Разбить путь запроса на части
-	parts := strings.Split(r.URL.Path, "/")
+	//// Разбить путь запроса на части
+	//parts := strings.Split(r.URL.Path, "/")
+	//
+	//// Извлечь значение {id}
+	//if len(parts) < 2 || parts[1] == "" {
+	//	http.Error(w, "Некорректный запрос", http.StatusBadRequest)
+	//	return
+	//}
+	//shortURL := parts[1]
+	//fmt.Println("GET st: ", st.URLsStore)
+	//fmt.Println("shortURL: ", shortURL)
+	//
+	//// Найти соответствующий originalURL
+	//originalURL, ok := st.URLsStore[shortURL]
+	//if !ok {
+	//	log.Println("OriginalURL not found")
+	//	w.WriteHeader(http.StatusNotFound)
+	//	//return
+	//}
+	//
+	//// Выполнить редирект на originalURL
+	//w.Header().Set("Location", originalURL)
+	//w.WriteHeader(http.StatusTemporaryRedirect)
+	//fmt.Println("originalURLGET:", originalURL)
+	shortURL := chi.URLParam(r, "id")
 
-	// Извлечь значение {id}
-	if len(parts) < 2 || parts[1] == "" {
-		http.Error(w, "Некорректный запрос", http.StatusBadRequest)
+	origURL, ok := st.GetURL(shortURL)
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	shortURL := parts[1]
-
-	originalURL, exists := st.GetURL(shortURL)
-
-	if !exists {
-		log.Println("OriginalURl not found")
-		w.WriteHeader(http.StatusNotFound)
-		return
-	} else {
-		w.Header().Set("Location", originalURL)
-		w.WriteHeader(http.StatusTemporaryRedirect)
-	}
-
+	w.Header().Set("Location", origURL)
+	w.WriteHeader(http.StatusTemporaryRedirect)
+	fmt.Println("id:", shortURL)
 }
 
 func HandlePing(w http.ResponseWriter, r *http.Request) {
