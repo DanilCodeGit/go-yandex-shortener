@@ -271,7 +271,8 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 	id := parts[1]
 
 	originalURL := st[id]
-
+	fmt.Println("orig: ", originalURL)
+	fmt.Println("st: ", st)
 	w.Header().Set("Location", originalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 
