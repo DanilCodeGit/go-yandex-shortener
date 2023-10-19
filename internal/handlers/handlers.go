@@ -26,6 +26,8 @@ type URLData struct {
 	OriginalURL string `json:"original_url"`
 }
 
+var st = storage.NewStorage()
+
 func saveDataToFile(data map[string]string, filePath string) error {
 	// Преобразуем данные в формат URLData
 	var jsonData []URLData
@@ -48,7 +50,7 @@ func saveDataToFile(data map[string]string, filePath string) error {
 }
 
 func HandlePost(w http.ResponseWriter, r *http.Request) {
-	st := storage.NewStorage()
+
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
 	body, err := io.ReadAll(r.Body)
@@ -64,13 +66,13 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	url := string(body)
 
 	shortURL := tools.HashURL(url)
-	st.SetURL(shortURL, url)
-	//st[shortURL] = url
+	st.SetURL(url, shortURL)
 
 	// Преобразование данных в формат JSON
 	jsonData := make(map[string]string)
 	for shortURL, originalURL := range st.URLsStore {
 		jsonData[shortURL] = originalURL
+		fmt.Println(st.URLsStore)
 	}
 
 	////////////////////// DATABASE
@@ -88,10 +90,6 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusConflict)
 	}
-	//err = postgre.DeleteAllRecords(conn)
-	//if err != nil {
-	//	log.Println("Не удалось удалить записи")
-	//}
 
 	originalURL, exists := st.GetURL(shortURL)
 	if !exists {
@@ -120,7 +118,6 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
-	st := storage.NewStorage()
 	ctx, cancel := context.WithTimeout(req.Context(), 3*time.Second)
 	defer cancel()
 	var buf bytes.Buffer
@@ -136,19 +133,14 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		return
 	}
 
-	//url, found := st["url"]
 	url, found := st.GetURL("url")
 	if !found {
 		http.Error(w, "Missing 'url' field in JSON", http.StatusBadRequest)
 		return
 	}
+
 	shortURL := tools.HashURL(url)
-	st.SetURL(shortURL, url)
-	//st[shortURL] = url
-	originalURL, exists := st.GetURL(shortURL)
-	if !exists {
-		log.Println("Original URL not found")
-	}
+	st.SetURL(url, shortURL)
 
 	st.DeleteURL("url")
 
@@ -177,19 +169,14 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		log.Println("База не создана")
 	}
 
-	err = postgre.CheckDuplicate(ctx, conn, originalURL)
+	err = postgre.CheckDuplicate(ctx, conn, url)
 	if err != nil {
 		w.WriteHeader(http.StatusConflict)
 		fmt.Fprint(w, string(responseJSON))
 		return
 	}
 
-	//err = postgre.DeleteAllRecords(conn)
-	//if err != nil {
-	//	log.Println("Не удалось удалить записи")
-	//}
-
-	err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
+	err = postgre.SaveShortenedURL(conn, url, shortURL)
 	if err != nil {
 		log.Println("Запись не произошла")
 	}
@@ -207,7 +194,6 @@ type Multi struct {
 }
 
 func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
-	st := storage.NewStorage()
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
 	var m []Multi
@@ -296,7 +282,6 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleGet(w http.ResponseWriter, r *http.Request) {
-	st := storage.NewStorage()
 	// Разбить путь запроса на части
 	parts := strings.Split(r.URL.Path, "/")
 
@@ -306,12 +291,19 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	shortURL := parts[1]
+	fmt.Println("map: ", st.URLsStore)
+	fmt.Println("shortUrl: ", shortURL)
+	//originalURL, exists := st.URLsStore[shortURL]
 	originalURL, exists := st.GetURL(shortURL)
+
 	if !exists {
 		log.Println("OriginalURl not found")
+		w.WriteHeader(http.StatusNotFound)
+		return
+	} else {
+		w.Header().Set("Location", originalURL)
+		w.WriteHeader(http.StatusTemporaryRedirect)
 	}
-	w.Header().Set("Location", originalURL)
-	w.WriteHeader(http.StatusTemporaryRedirect)
 
 }
 

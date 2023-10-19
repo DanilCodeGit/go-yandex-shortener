@@ -22,8 +22,8 @@ func (s *Storage) SetURL(key, value string) {
 func (s *Storage) GetURL(key string) (string, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	value, exists := s.URLsStore[key]
-	return value, exists
+	value, _ := s.URLsStore[key]
+	return value, true
 }
 func (s *Storage) DeleteURL(key string) {
 	s.mu.Lock()
