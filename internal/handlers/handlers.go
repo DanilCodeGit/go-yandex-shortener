@@ -73,26 +73,28 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	////////////////////// DATABASE
+	if *cfg.FlagDataBaseDSN != "" {
+		conn, err := postgre.DBConn(ctx)
+		if err != nil {
+			log.Println("Неудачное подключение")
+		}
+		err = postgre.CreateTable(conn)
+		if err != nil {
+			log.Println("База не создана")
+		}
+		err = postgre.DeleteAllRecords(conn)
 
-	conn, err := postgre.DBConn(ctx)
-	if err != nil {
-		log.Println("Неудачное подключение")
-	}
-	err = postgre.CreateTable(conn)
-	if err != nil {
-		log.Println("База не создана")
-	}
-	err = postgre.DeleteAllRecords(conn)
+		err = postgre.CheckDuplicate(ctx, conn, url)
+		if err != nil {
+			w.WriteHeader(http.StatusConflict)
+		}
 
-	err = postgre.CheckDuplicate(ctx, conn, url)
-	if err != nil {
-		w.WriteHeader(http.StatusConflict)
+		err = postgre.SaveShortenedURL(conn, url, shortURL)
+		if err != nil {
+			log.Println("Запись не произошла")
+		}
 	}
 
-	err = postgre.SaveShortenedURL(conn, url, shortURL)
-	if err != nil {
-		log.Println("Запись не произошла")
-	}
 	///////////////////////
 
 	// Сохранение данных в файл после обновления
@@ -156,28 +158,31 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	fmt.Println("url:", url)
 	fmt.Println("shortUrl:", shortURLDB)
 	////////////////////// DATABASE
-	conn, err := postgre.DBConn(ctx)
-	if err != nil {
-		log.Println("Неудачное подключение")
-	}
-	err = postgre.CreateTable(conn)
-	if err != nil {
-		log.Println("База не создана")
+	if *cfg.FlagDataBaseDSN != "" {
+		conn, err := postgre.DBConn(ctx)
+		if err != nil {
+			log.Println("Неудачное подключение")
+		}
+		err = postgre.CreateTable(conn)
+		if err != nil {
+			log.Println("База не создана")
+		}
+
+		err = postgre.DeleteAllRecords(conn)
+
+		err = postgre.CheckDuplicate(ctx, conn, url)
+		if err != nil {
+			w.WriteHeader(http.StatusConflict)
+			fmt.Fprint(w, string(responseJSON))
+			return
+		}
+
+		err = postgre.SaveShortenedURL(conn, url, shortURLDB)
+		if err != nil {
+			log.Println("Запись не произошла")
+		}
 	}
 
-	err = postgre.DeleteAllRecords(conn)
-
-	err = postgre.CheckDuplicate(ctx, conn, url)
-	if err != nil {
-		w.WriteHeader(http.StatusConflict)
-		fmt.Fprint(w, string(responseJSON))
-		return
-	}
-
-	err = postgre.SaveShortenedURL(conn, url, shortURLDB)
-	if err != nil {
-		log.Println("Запись не произошла")
-	}
 	///////////////////////
 
 	w.Header().Set("Content-Type", "application/json")
@@ -249,24 +254,21 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	////////////////////// DATABASE
-	conn, err := postgre.DBConn(ctx)
-	if err != nil {
-		log.Println("Неудачное подключение")
-	}
-	err = postgre.CreateTable(conn)
-	if err != nil {
-		log.Println("База не создана")
-	}
-
-	err = postgre.DeleteAllRecords(conn)
-	if err != nil {
-		log.Println("Не удалось удалить записи")
-	}
-
-	for shortURL, originalURL := range newData {
-		err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
+	if *cfg.FlagDataBaseDSN != "" {
+		conn, err := postgre.DBConn(ctx)
 		if err != nil {
-			log.Println("Запись не произошла")
+			log.Println("Неудачное подключение")
+		}
+		err = postgre.CreateTable(conn)
+		if err != nil {
+			log.Println("База не создана")
+		}
+
+		for shortURL, originalURL := range newData {
+			err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
+			if err != nil {
+				log.Println("Запись не произошла")
+			}
 		}
 	}
 
