@@ -49,7 +49,6 @@ func saveDataToFile(data map[string]string, filePath string) error {
 }
 
 func HandlePost(w http.ResponseWriter, r *http.Request) {
-	st := storage.NewStorage()
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
 	body, err := io.ReadAll(r.Body)
@@ -113,7 +112,6 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
-	st := storage.NewStorage()
 	ctx, cancel := context.WithTimeout(req.Context(), 3*time.Second)
 	defer cancel()
 	var buf bytes.Buffer
@@ -166,6 +164,9 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	if err != nil {
 		log.Println("База не создана")
 	}
+
+	err = postgre.DeleteAllRecords(conn)
+
 	err = postgre.CheckDuplicate(ctx, conn, url)
 	if err != nil {
 		w.WriteHeader(http.StatusConflict)

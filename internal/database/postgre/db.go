@@ -64,3 +64,14 @@ func DeleteAllRecords(conn *pgxpool.Pool) error {
 	fmt.Printf("Все записи из таблицы удалены успешно.\n")
 	return nil
 }
+func DeleteLastRecord(conn *pgxpool.Pool, tableName, columnName string) error {
+	// SQL-запрос для удаления последней записи на основе заданного столбца
+	sqlStatement := fmt.Sprintf(`
+        DELETE FROM $1
+        WHERE $2 = (SELECT max($3) FROM $4)
+    `, tableName, columnName, columnName, tableName)
+
+	// Выполнение SQL-запроса
+	_, err := conn.Exec(context.Background(), sqlStatement)
+	return err
+}
