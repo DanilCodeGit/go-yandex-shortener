@@ -309,6 +309,14 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 	//fmt.Println("originalURLGET:", originalURL)
 
 	shortURL := chi.URLParam(r, "id")
+	origURL, ok := st.GetURL(shortURL)
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Location", origURL)
+	w.WriteHeader(http.StatusTemporaryRedirect)
+	fmt.Println("id:", shortURL)
 	// Удалить записи из базы данных перед обработкой запроса
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
@@ -326,14 +334,6 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	origURL, ok := st.GetURL(shortURL)
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	w.Header().Set("Location", origURL)
-	w.WriteHeader(http.StatusTemporaryRedirect)
-	fmt.Println("id:", shortURL)
 }
 
 func HandlePing(w http.ResponseWriter, r *http.Request) {
