@@ -73,31 +73,24 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	////////////////////// DATABASE
-	if *cfg.FlagDataBaseDSN != "" {
-		conn, err := postgre.DBConn(ctx)
-		if err != nil {
-			log.Println("Неудачное подключение")
-		}
-		err = postgre.CreateTable(conn)
-		if err != nil {
-			log.Println("База не создана")
-		}
 
-		err = postgre.CheckDuplicate(ctx, conn, url)
-		if err != nil {
-			w.WriteHeader(http.StatusConflict)
-			fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
-			if err != nil {
-				return
-			}
-			fmt.Print(fprintf)
-			return
-		}
+	conn, err := postgre.DBConn(ctx)
+	if err != nil {
+		log.Println("Неудачное подключение")
+	}
+	err = postgre.CreateTable(conn)
+	if err != nil {
+		log.Println("База не создана")
+	}
 
-		err = postgre.SaveShortenedURL(conn, url, shortURL)
-		if err != nil {
-			log.Println("Запись не произошла")
-		}
+	err = postgre.CheckDuplicate(ctx, conn, url)
+	if err != nil {
+		w.WriteHeader(http.StatusConflict)
+	}
+
+	err = postgre.SaveShortenedURL(conn, url, shortURL)
+	if err != nil {
+		log.Println("Запись не произошла")
 	}
 
 	///////////////////////
@@ -257,21 +250,20 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	////////////////////// DATABASE
-	if *cfg.FlagDataBaseDSN != "" {
-		conn, err := postgre.DBConn(ctx)
-		if err != nil {
-			log.Println("Неудачное подключение")
-		}
-		err = postgre.CreateTable(conn)
-		if err != nil {
-			log.Println("База не создана")
-		}
 
-		for shortURL, originalURL := range newData {
-			err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
-			if err != nil {
-				log.Println("Запись не произошла")
-			}
+	conn, err := postgre.DBConn(ctx)
+	if err != nil {
+		log.Println("Неудачное подключение")
+	}
+	err = postgre.CreateTable(conn)
+	if err != nil {
+		log.Println("База не создана")
+	}
+
+	for shortURL, originalURL := range newData {
+		err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
+		if err != nil {
+			log.Println("Запись не произошла")
 		}
 	}
 
