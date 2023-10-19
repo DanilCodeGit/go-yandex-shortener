@@ -309,23 +309,6 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Location", origURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 	fmt.Println("id:", shortURL)
-	// Удалить записи из базы данных перед обработкой запроса
-	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
-	defer cancel()
-	conn, err := postgre.DBConn(ctx)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Fatalf("Хэндлер не может подключиться к бд")
-	}
-	defer conn.Close()
-
-	// Удаление записей из базы данных
-	err = postgre.DeleteAllRecords(conn)
-	if err != nil {
-		log.Printf("Ошибка при удалении записей из базы данных: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
 }
 
 func HandlePing(w http.ResponseWriter, r *http.Request) {
