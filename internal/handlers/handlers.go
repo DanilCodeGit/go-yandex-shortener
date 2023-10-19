@@ -82,7 +82,6 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println("База не создана")
 		}
-		//err = postgre.DeleteAllRecords(conn)
 
 		err = postgre.CheckDuplicate(ctx, conn, url)
 		if err != nil {
@@ -173,8 +172,6 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		if err != nil {
 			log.Println("База не создана")
 		}
-
-		err = postgre.DeleteAllRecords(conn)
 
 		err = postgre.CheckDuplicate(ctx, conn, url)
 		if err != nil {
@@ -310,8 +307,25 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 	//w.Header().Set("Location", originalURL)
 	//w.WriteHeader(http.StatusTemporaryRedirect)
 	//fmt.Println("originalURLGET:", originalURL)
-	shortURL := chi.URLParam(r, "id")
 
+	shortURL := chi.URLParam(r, "id")
+	// Удалить записи из базы данных перед обработкой запроса
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+	conn, err := postgre.DBConn(ctx)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Fatalf("Хэндлер не может подключиться к бд")
+	}
+	defer conn.Close()
+
+	// Удаление записей из базы данных
+	err = postgre.DeleteAllRecords(conn)
+	if err != nil {
+		log.Printf("Ошибка при удалении записей из базы данных: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	origURL, ok := st.GetURL(shortURL)
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)

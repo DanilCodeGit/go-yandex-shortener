@@ -130,30 +130,30 @@ func TestHandleGet(t *testing.T) {
 	// Добавляем другие проверки по мере необходимости.
 }
 
-//func TestHandlePost(t *testing.T) {
-//	// Создаем запрос с телом POST.
-//	requestBody := []byte("https://example.com")
-//	req, err := http.NewRequest("POST", "/", strings.NewReader(string(requestBody)))
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//
-//	// Создаем записыватель ответа для захвата ответа.
-//	rr := httptest.NewRecorder()
-//
-//	// Вызываем хэндлер.
-//	handlers.HandlePost(rr, req)
-//
-//	// Проверяем статус ответа.
-//	if rr.Code != http.StatusCreated {
-//		t.Errorf("Ожидался статус %d; получен %d", http.StatusCreated, rr.Code)
-//	}
-//
-//	// Проверяем тело ответа, если необходимо.
-//	// ...
-//
-//	// Добавляем другие проверки по мере необходимости.
-//}
+func TestHandlePost(t *testing.T) {
+	// Создаем запрос с телом POST.
+	requestBody := []byte("https://example.com")
+	req, err := http.NewRequest("POST", "/", strings.NewReader(string(requestBody)))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Создаем записыватель ответа для захвата ответа.
+	rr := httptest.NewRecorder()
+
+	// Вызываем хэндлер.
+	handlers.HandlePost(rr, req)
+
+	// Проверяем статус ответа.
+	if rr.Code != http.StatusCreated {
+		t.Errorf("Ожидался статус %d; получен %d", http.StatusCreated, rr.Code)
+	}
+
+	// Проверяем тело ответа, если необходимо.
+	// ...
+
+	// Добавляем другие проверки по мере необходимости.
+}
 
 func TestJSONHandler(t *testing.T) {
 	// Создаем запрос с телом JSON.
