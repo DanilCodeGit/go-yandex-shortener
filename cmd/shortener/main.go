@@ -17,9 +17,9 @@ func main() {
 
 	r := chi.NewRouter()
 	loggerGetPing := logger.WithLogging(gzipMiddleware(handlers.HandlePing))
-	loggerGet := logger.WithLogging(gzipMiddleware(handlers.HandleGet))
-	loggerPost := logger.WithLogging(gzipMiddleware(handlers.HandlePost))
-	loggerJSONHandler := logger.WithLogging(gzipMiddleware(handlers.JSONHandler))
+	loggerGet := logger.WithLogging(http.HandlerFunc(handlers.HandleGet))
+	loggerPost := logger.WithLogging(http.HandlerFunc(handlers.HandlePost))
+	loggerJSONHandler := logger.WithLogging(http.HandlerFunc(handlers.JSONHandler))
 	loggerMultipleRequestHandler := logger.WithLogging(gzipMiddleware(handlers.MultipleRequestHandler))
 	r.Get("/ping", loggerGetPing.ServeHTTP)
 	r.Get("/{id}", loggerGet.ServeHTTP)

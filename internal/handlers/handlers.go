@@ -7,6 +7,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -79,7 +80,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	mu.Unlock()
 
 	////////////////////// DATABASE
-	conn, err := postgre.DBConn()
+	conn, err := postgre.DBConn(context.Background())
 	if err != nil {
 		log.Println("Неудачное подключение")
 	}
@@ -154,7 +155,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		return
 	}
 	////////////////////// DATABASE
-	conn, err := postgre.DBConn()
+	conn, err := postgre.DBConn(context.Background())
 	if err != nil {
 		log.Println("Неудачное подключение")
 	}
@@ -236,7 +237,7 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	////////////////////// DATABASE
-	conn, err := postgre.DBConn()
+	conn, err := postgre.DBConn(context.Background())
 	if err != nil {
 		log.Println("Неудачное подключение")
 	}
@@ -268,9 +269,8 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := parts[1]
-	mu.Lock()
-	originalURL := storage.URLStore[id]
-	mu.Unlock()
+
+	originalURL := st[id]
 
 	w.Header().Set("Location", originalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
@@ -278,7 +278,7 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandlePing(w http.ResponseWriter, r *http.Request) {
-	conn, err := postgre.DBConn()
+	conn, err := postgre.DBConn(context.Background())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Fatalf("Хэндлер не может подключиться к бд")
