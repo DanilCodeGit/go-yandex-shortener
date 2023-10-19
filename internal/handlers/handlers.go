@@ -131,11 +131,10 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	}
 	shortURL := tools.HashURL(url)
 
-	//st[shortURL] = url
 	//originalURL := st[shortURL]
-	//delete(st, "url")
 	st.SetURL(shortURL, url)
-	//originalURL, _ := st.GetURL(shortURL)
+	originalURL, _ := st.GetURL(shortURL)
+	fmt.Println("original: ", originalURL)
 
 	st.DeleteURL("url")
 
