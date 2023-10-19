@@ -135,7 +135,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	//originalURL := st[shortURL]
 	//delete(st, "url")
 	st.SetURL(shortURL, url)
-	originalURL, _ := st.GetURL(shortURL)
+	//originalURL, _ := st.GetURL(shortURL)
 
 	st.DeleteURL("url")
 
@@ -165,9 +165,11 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		log.Println("База не создана")
 	}
 
-	err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
-	if err != nil {
-		log.Println("Запись не произошла")
+	for shortURL, originalURL := range newData {
+		err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
+		if err != nil {
+			log.Println("Запись не произошла")
+		}
 	}
 	///////////////////////
 
