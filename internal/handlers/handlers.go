@@ -269,9 +269,8 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := parts[1]
-	mu.Lock()
-	originalURL := storage.URLStore[id]
-	mu.Unlock()
+
+	originalURL := st[id]
 
 	w.Header().Set("Location", originalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
