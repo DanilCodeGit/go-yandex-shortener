@@ -83,9 +83,15 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 		log.Println("База не создана")
 	}
 
-	err = postgre.CheckDuplicate(ctx, conn, url)
+	err = postgre.InsertURL(conn, url, shortURL)
 	if err != nil {
 		w.WriteHeader(http.StatusConflict)
+		fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
+		if err != nil {
+			return
+		}
+		fmt.Print(fprintf)
+		return
 	}
 
 	err = postgre.SaveShortenedURL(conn, url, shortURL)
@@ -110,6 +116,75 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Print(fprintf)
 }
+
+//func HandlePost(w http.ResponseWriter, r *http.Request) {
+//	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+//	defer cancel()
+//	body, err := io.ReadAll(r.Body)
+//	if err != nil {
+//		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+//		return
+//	}
+//	if len(body) == 0 {
+//		http.Error(w, "Тело запроса пустое", http.StatusBadRequest)
+//		return
+//	}
+//
+//	url := string(body)
+//
+//	shortURL := tools.HashURL(url)
+//	st.SetURL(shortURL, url)
+//
+//	// Преобразование данных в формат JSON
+//	jsonData := make(map[string]string)
+//	for shortURL, originalURL := range st.URLsStore {
+//		jsonData[shortURL] = originalURL
+//	}
+//
+//	////////////////////// DATABASE
+//
+//	conn, err := postgre.DBConn(ctx)
+//	if err != nil {
+//		log.Println("Неудачное подключение")
+//	}
+//	err = postgre.CreateTable(conn)
+//	if err != nil {
+//		log.Println("База не создана")
+//	}
+//
+//	err = postgre.CheckDuplicate(ctx, conn, url)
+//	if err != nil {
+//		w.WriteHeader(http.StatusConflict)
+//		fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
+//		if err != nil {
+//			return
+//		}
+//		fmt.Print(fprintf)
+//		return
+//	}
+//
+//	err = postgre.SaveShortenedURL(conn, url, shortURL)
+//	if err != nil {
+//		log.Println("Запись не произошла")
+//	}
+//
+//	///////////////////////
+//
+//	// Сохранение данных в файл после обновления
+//	err = saveDataToFile(jsonData, *cfg.FlagFileStoragePath)
+//	if err != nil {
+//		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
+//		return
+//	}
+//	fmt.Println(st.URLsStore)
+//	w.Header().Set("Content-Type", "text/plain")
+//	w.WriteHeader(http.StatusCreated)
+//	fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
+//	if err != nil {
+//		return
+//	}
+//	fmt.Print(fprintf)
+//}
 
 func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	ctx, cancel := context.WithTimeout(req.Context(), 3*time.Second)

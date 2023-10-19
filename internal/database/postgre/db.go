@@ -54,13 +54,21 @@ func CheckDuplicate(ctx context.Context, conn *pgxpool.Pool, originalURL string)
 	return nil
 }
 
-func DeleteAllRecords(conn *pgxpool.Pool) error {
-	// Непосредственно выполняем SQL-запрос
-	var _, err = conn.Exec(context.Background(), `DELETE FROM short_urls`)
+func InsertURL(conn *pgxpool.Pool, originalURL, shortURL string) error {
+	query := "INSERT INTO short_urls (original_url, short_url) VALUES ($1, $2) ON CONFLICT (original_url) DO NOTHING"
+	result, err := conn.Exec(context.Background(), query, originalURL, shortURL)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Все записи из таблицы удалены успешно.\n")
+	// Проверка количества вставленных строк
+	rowCount := result.RowsAffected()
+	if rowCount == 0 {
+		// Здесь можно обработать ситуацию, когда конфликт произошел
+		conflictError := fmt.Errorf("Конфликт: строка с original_url уже существует в таблице")
+		return conflictError
+	}
+
+	// Возврат nil или другой информации в зависимости от вашей логики
 	return nil
 }
