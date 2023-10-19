@@ -4,6 +4,8 @@ import (
 	"sync"
 )
 
+var URLStore = make(map[string]string)
+
 type Storage struct {
 	URLsStore map[string]string
 	mu        sync.RWMutex
