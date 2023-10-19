@@ -1,3 +1,8 @@
+// Добавить функцию сохранения json в файле
+// Добавить тесты
+// Исправить storage (Использовать структуру storage)
+
+// Работающий вариант
 package handlers
 
 import (
@@ -11,7 +16,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/database/postgre"
@@ -49,8 +53,7 @@ func saveDataToFile(data map[string]string, filePath string) error {
 }
 
 func HandlePost(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
-	defer cancel()
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -77,8 +80,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	mu.Unlock()
 
 	////////////////////// DATABASE
-
-	conn, err := postgre.DBConn(ctx)
+	conn, err := postgre.DBConn(context.Background())
 	if err != nil {
 		log.Println("Неудачное подключение")
 	}
@@ -110,8 +112,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
-	ctx, cancel := context.WithTimeout(req.Context(), 3*time.Second)
-	defer cancel()
+
 	var buf bytes.Buffer
 	// читаем тело запроса
 	_, err := buf.ReadFrom(req.Body)
@@ -154,7 +155,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		return
 	}
 	////////////////////// DATABASE
-	conn, err := postgre.DBConn(ctx)
+	conn, err := postgre.DBConn(context.Background())
 	if err != nil {
 		log.Println("Неудачное подключение")
 	}
@@ -181,8 +182,6 @@ type Multi struct {
 }
 
 func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
-	defer cancel()
 	var m []Multi
 	var buf bytes.Buffer
 
@@ -205,7 +204,7 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 	var shortenData []ShortenStruct
 
 	for _, item := range m {
-
+		// Создаем хеш SHA-256 от OriginalUrl
 		hash := tools.HashURL(item.OriginalURL)
 		tmp := hash
 		shortURL := "http://localhost:8080" + "/" + hash
@@ -238,7 +237,7 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	////////////////////// DATABASE
-	conn, err := postgre.DBConn(ctx)
+	conn, err := postgre.DBConn(context.Background())
 	if err != nil {
 		log.Println("Неудачное подключение")
 	}
@@ -280,9 +279,7 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandlePing(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
-	defer cancel()
-	conn, err := postgre.DBConn(ctx)
+	conn, err := postgre.DBConn(context.Background())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Fatalf("Хэндлер не может подключиться к бд")

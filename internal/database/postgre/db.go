@@ -39,29 +39,3 @@ func SaveShortenedURL(conn *pgxpool.Pool, originalURL, shortURL string) error {
 	_, err := conn.Exec(context.Background(), "INSERT INTO short_urls (original_url, short_url) VALUES ($1, $2)", originalURL, shortURL)
 	return err
 }
-func CheckDuplicate(ctx context.Context, conn *pgxpool.Pool, originalURL string) error {
-	//rows, err := conn.Query(ctx, `select original_url from short_urls`)
-	//for rows.Next() {
-	//	var dublicate string
-	//	err = rows.Scan(&dublicate)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	if dublicate == originalURL {
-	//		return fmt.Errorf("данный url уже существует в БД")
-	//	}
-	//}
-	//return err
-	query := "SELECT COUNT(*) FROM short_urls WHERE original_url = $1"
-	var count int
-	err := conn.QueryRow(ctx, query, originalURL).Scan(&count)
-	if err != nil {
-		return err
-	}
-
-	if count > 0 {
-		return fmt.Errorf("данный url уже существует в БД")
-	}
-
-	return err
-}
