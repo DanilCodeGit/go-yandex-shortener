@@ -7,7 +7,7 @@ import (
 	"github.com/caarlos0/env"
 )
 
-// Config Переменные окружения
+// Config Переменные окружения.
 type Config struct {
 	ServerAddress   string `env:"SERVER_ADDRESS"`
 	BaseURL         string `env:"BASE_URL"`

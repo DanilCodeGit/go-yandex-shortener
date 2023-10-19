@@ -39,7 +39,6 @@ func gzipMiddleware(h http.HandlerFunc) http.HandlerFunc {
 		// который будем передавать следующей функции
 		ow := w
 
-		// проверяем, что клиент умеет получать от сервера сжатые данные в формате gzip
 		acceptEncoding := r.Header.Get("Accept-Encoding")
 		supportsGzip := strings.Contains(acceptEncoding, "gzip")
 		if supportsGzip {
