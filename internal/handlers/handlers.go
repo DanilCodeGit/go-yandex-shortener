@@ -82,11 +82,17 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println("База не создана")
 		}
-		err = postgre.DeleteAllRecords(conn)
+		//err = postgre.DeleteAllRecords(conn)
 
 		err = postgre.CheckDuplicate(ctx, conn, url)
 		if err != nil {
 			w.WriteHeader(http.StatusConflict)
+			fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
+			if err != nil {
+				return
+			}
+			fmt.Print(fprintf)
+			return
 		}
 
 		err = postgre.SaveShortenedURL(conn, url, shortURL)
