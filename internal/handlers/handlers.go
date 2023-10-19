@@ -83,16 +83,16 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 		log.Println("База не создана")
 	}
 
-	err = postgre.InsertURL(conn, url, shortURL)
-	if err != nil {
-		w.WriteHeader(http.StatusCreated)
-		fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
-		if err != nil {
-			return
-		}
-		fmt.Print(fprintf)
-		return
-	}
+	//err = postgre.InsertURL(conn, url, shortURL)
+	//if err != nil {
+	//	w.WriteHeader(http.StatusCreated)
+	//	fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
+	//	if err != nil {
+	//		return
+	//	}
+	//	fmt.Print(fprintf)
+	//	return
+	//}
 
 	err = postgre.SaveShortenedURL(conn, url, shortURL)
 	if err != nil {
@@ -241,17 +241,17 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 			log.Println("База не создана")
 		}
 
-		err = postgre.InsertURL(conn, url, shortURL)
-		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusCreated)
-			fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
-			if err != nil {
-				return
-			}
-			fmt.Print(fprintf)
-			return
-		}
+		//err = postgre.InsertURL(conn, url, shortURL)
+		//if err != nil {
+		//	w.Header().Set("Content-Type", "application/json")
+		//	w.WriteHeader(http.StatusCreated)
+		//	fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
+		//	if err != nil {
+		//		return
+		//	}
+		//	fmt.Print(fprintf)
+		//	return
+		//}
 
 		err = postgre.SaveShortenedURL(conn, url, shortURLDB)
 		if err != nil {
