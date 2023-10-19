@@ -85,17 +85,17 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("База не создана")
 	}
-
+	fmt.Println("url:", url)
 	err = postgre.CheckDuplicate(ctx, conn, url)
 	if err != nil {
 		w.WriteHeader(http.StatusConflict)
 	}
 
-	originalURL, exists := st.GetURL(shortURL)
-	if !exists {
-		log.Println("OriginalURL not found")
-	}
-	err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
+	//originalURL, exists := st.GetURL(shortURL)
+	//if !exists {
+	//	log.Println("OriginalURL not found")
+	//}
+	err = postgre.SaveShortenedURL(conn, url, shortURL)
 	if err != nil {
 		log.Println("Запись не произошла")
 	}
@@ -168,7 +168,6 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	if err != nil {
 		log.Println("База не создана")
 	}
-
 	err = postgre.CheckDuplicate(ctx, conn, url)
 	if err != nil {
 		w.WriteHeader(http.StatusConflict)
@@ -291,9 +290,7 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	shortURL := parts[1]
-	fmt.Println("map: ", st.URLsStore)
-	fmt.Println("shortUrl: ", shortURL)
-	//originalURL, exists := st.URLsStore[shortURL]
+
 	originalURL, exists := st.GetURL(shortURL)
 
 	if !exists {
