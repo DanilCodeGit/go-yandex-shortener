@@ -82,8 +82,8 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("База не создана")
 	}
-	fmt.Println("url:", url)
-	fmt.Println("shortPOST:", shortURL)
+	err = postgre.DeleteAllRecords(conn)
+
 	err = postgre.CheckDuplicate(ctx, conn, url)
 	if err != nil {
 		w.WriteHeader(http.StatusConflict)
