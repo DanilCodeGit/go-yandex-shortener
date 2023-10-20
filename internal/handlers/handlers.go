@@ -88,8 +88,14 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	err = postgre.SaveShortenedURL(conn, url, shortURL)
 	if err != nil {
-		log.Println("Запись не произошла")
-
+		log.Println("Запись не произошла:", err)
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusConflict)
+		fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
+		if err != nil {
+			return
+		}
+		fmt.Print(fprintf)
 	}
 	///////////////////////
 
@@ -169,6 +175,13 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
 		if err != nil {
 			log.Println("Запись не произошла")
+			w.Header().Set("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusConflict)
+			fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
+			if err != nil {
+				return
+			}
+			fmt.Print(fprintf)
 		}
 	}
 	///////////////////////
