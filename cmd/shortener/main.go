@@ -25,8 +25,6 @@ func main() {
 		log.Println("База не создана")
 	}
 
-	err = postgre.DeleteAllRecords(conn)
-
 	cfg.InitConfig()
 
 	r := chi.NewRouter()

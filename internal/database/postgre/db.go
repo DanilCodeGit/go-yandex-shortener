@@ -44,8 +44,3 @@ func SaveShortenedURL(conn *pgxpool.Pool, originalURL, shortURL string) error {
 		originalURL, shortURL)
 	return err
 }
-
-func DeleteAllRecords(conn *pgxpool.Pool) error {
-	_, err := conn.Exec(context.Background(), "DELETE FROM short_urls")
-	return err
-}

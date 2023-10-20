@@ -68,7 +68,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	//st[ShortURL] = url
 	st.SetURL(shortURL, url)
-
+	originalURL, _ := st.GetURL(shortURL)
 	// Преобразование данных в формат JSON
 	jsonData := make(map[string]string)
 
@@ -87,7 +87,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 		log.Println("База не создана")
 	}
 
-	err = postgre.SaveShortenedURL(conn, url, shortURL)
+	err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
 	if err != nil {
 		log.Println("Запись не произошла:", err)
 		w.Header().Set("Content-Type", "text/plain")
