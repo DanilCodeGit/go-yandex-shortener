@@ -3,7 +3,6 @@ package tools
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"os"
 )
 
 func HashURL(urlToHash string) string {
@@ -23,19 +22,4 @@ func HashURL(urlToHash string) string {
 	shortenedHashedURL := string(runes[:6])
 
 	return shortenedHashedURL
-}
-
-func IsFlagAndEnvSet(envName string) bool {
-
-	envSet := false
-
-	// Проверяем, установлена ли переменная окружения
-	if envValue, exists := os.LookupEnv(envName); exists {
-		if envValue != "" {
-			envSet = true
-		}
-	}
-
-	// Возвращаем true, если и флаг, и переменная окружения установлены
-	return envSet
 }
