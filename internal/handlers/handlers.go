@@ -201,6 +201,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	code := postgre.SaveShortenedURL(conn, url, shortURL)
 	if code == "23505" {
 		log.Println("Запись не произошла")
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
 		fmt.Fprintf(w, "%v", string(responseJSON))
 		return
