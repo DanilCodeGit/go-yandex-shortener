@@ -77,27 +77,30 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	////////////////////// DATABASE
-	conn, err := postgre.DBConn(context.Background())
-	if err != nil {
-		log.Println("Неудачное подключение")
-	}
-	err = postgre.CreateTable(conn)
-	if err != nil {
-		log.Println("База не создана")
-	}
-
-	err = postgre.SaveShortenedURL(conn, url, shortURL)
-	if err != nil {
-		log.Println("Запись не произошла:", err)
-		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusConflict)
-		fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
+	if *cfg.FlagDataBaseDSN != "" {
+		conn, err := postgre.DBConn(context.Background())
 		if err != nil {
+			log.Println("Неудачное подключение")
+		}
+		err = postgre.CreateTable(conn)
+		if err != nil {
+			log.Println("База не создана")
+		}
+
+		err = postgre.SaveShortenedURL(conn, url, shortURL)
+		if err != nil {
+			log.Println("Запись не произошла:", err)
+			w.Header().Set("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusConflict)
+			fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
+			if err != nil {
+				return
+			}
+			fmt.Print(fprintf)
 			return
 		}
-		fmt.Print(fprintf)
-		return
 	}
+
 	///////////////////////
 
 	// Сохранение данных в файл после обновления
