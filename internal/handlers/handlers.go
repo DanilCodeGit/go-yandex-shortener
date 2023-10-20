@@ -202,11 +202,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	if code == "23505" {
 		log.Println("Запись не произошла")
 		w.WriteHeader(http.StatusConflict)
-		fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
-		if err != nil {
-			return
-		}
-		fmt.Print(fprintf)
+		fmt.Fprintf(w, "%v", string(responseJSON))
 		return
 	}
 
