@@ -87,7 +87,8 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	code, err := postgre.SaveShortenedURL(conn, url, shortURL)
-	if err != nil && code == 1 {
+
+	if code == 1 {
 		log.Println("Запись не произошла:", err)
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusConflict)
@@ -175,7 +176,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 
 	for shortURL, originalURL := range newData {
 		code, err := postgre.SaveShortenedURL(conn, originalURL, shortURL)
-		if err != nil && code == 1 {
+		if code == 1 {
 			log.Println("Запись не произошла:", err)
 			w.Header().Set("Content-Type", "text/plain")
 			w.WriteHeader(http.StatusConflict)

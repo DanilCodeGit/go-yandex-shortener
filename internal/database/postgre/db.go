@@ -52,18 +52,20 @@ func SaveShortenedURL(conn *pgxpool.Pool, originalURL, shortURL string) (int, er
 		`INSERT INTO 
 			short_urls (original_url, short_url) 
 			VALUES 
-			    ($1, $2)`,
+			($1, $2)`,
 		originalURL, shortURL)
 
-	switch e := err.(type) {
-	case *pq.Error:
-		switch e.Code {
-		case "23505":
-			fmt.Println("Duplicate")
-			return 1, err
-		default:
-			return -1, err
+	if err != nil {
+		switch e := err.(type) {
+		case *pq.Error:
+			switch e.Code {
+			case "23505":
+				fmt.Println("Duplicate")
+				return 1, err
+			default:
+				return -1, err
+			}
 		}
 	}
-	return 0, err
+	return 0, nil
 }
