@@ -36,27 +36,12 @@ func CreateTable(conn *pgxpool.Pool) error {
 
 func SaveShortenedURL(conn *pgxpool.Pool, originalURL, shortURL string) error {
 
-	_, err := conn.Exec(context.Background(), "INSERT INTO short_urls (original_url, short_url) VALUES ($1, $2)", originalURL, shortURL)
+	_, err := conn.Exec(context.Background(),
+		`INSERT INTO 
+				short_urls (original_url, short_url) 
+				VALUES 
+				    ($1, $2)`,
+		originalURL, shortURL)
+
 	return err
 }
-
-//func CheckDuplicate(conn *pgxpool.Pool, originalURL, shortURL string) error {
-//	query := `
-//        INSERT INTO short_urls (original_url, short_url)
-//        VALUES ($1, $2)
-//        ON CONFLICT (original_url) DO NOTHING
-//    `
-//	err := conn.QueryRow(context.Background(), query, originalURL, shortURL).Scan(&shortURL)
-//	if err != nil {
-//		if pgErr, ok := err.(*pq.Error); ok && pgErr.Code == "23505" {
-//			// Возвращаем ошибку, указывая на конфликт ключа
-//			return fmt.Errorf("Конфликт ключа: %v", err)
-//		} else {
-//			// Возвращаем другую ошибку
-//			return fmt.Errorf("Произошла ошибка при выполнении запроса: %v", err)
-//		}
-//	}
-//
-//	// Если нет ошибок, возвращаем nil
-//	return nil
-//}
