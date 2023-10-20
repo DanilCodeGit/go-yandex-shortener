@@ -68,7 +68,6 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	//st[ShortURL] = url
 	st.SetURL(shortURL, url)
-	originalURL, _ := st.GetURL(shortURL)
 	// Преобразование данных в формат JSON
 	jsonData := make(map[string]string)
 
@@ -87,8 +86,8 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 		log.Println("База не создана")
 	}
 
-	err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
-	if err != nil {
+	code, err := postgre.SaveShortenedURL(conn, url, shortURL)
+	if err != nil && code == 1 {
 		log.Println("Запись не произошла:", err)
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusConflict)
@@ -175,9 +174,9 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	}
 
 	for shortURL, originalURL := range newData {
-		err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
-		if err != nil {
-			log.Println("Запись не произошла")
+		code, err := postgre.SaveShortenedURL(conn, originalURL, shortURL)
+		if err != nil && code == 1 {
+			log.Println("Запись не произошла:", err)
 			w.Header().Set("Content-Type", "text/plain")
 			w.WriteHeader(http.StatusConflict)
 			fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
@@ -267,8 +266,8 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("База не создана")
 	}
 	for shortURL, originalURL := range newData {
-		err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
-		if err != nil {
+		code, err := postgre.SaveShortenedURL(conn, originalURL, shortURL)
+		if err != nil || code != 0 {
 			log.Println("Запись не произошла")
 		}
 	}
