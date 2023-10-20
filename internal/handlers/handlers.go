@@ -86,14 +86,16 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 		log.Println("База не создана")
 	}
 
-	err = postgre.CheckDublicate(conn, url, shortURL, w)
-	if err != nil {
-		fmt.Println("Функция не сработала")
-	}
-
 	err = postgre.SaveShortenedURL(conn, url, shortURL)
 	if err != nil {
 		log.Println("Запись не произошла")
+		w.WriteHeader(http.StatusConflict)
+		fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
+		if err != nil {
+			return
+		}
+		fmt.Print(fprintf)
+
 	}
 	///////////////////////
 
@@ -169,15 +171,17 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		log.Println("База не создана")
 	}
 
-	err = postgre.CheckDublicate(conn, url, shortURL, w)
-	if err != nil {
-		fmt.Println("Функция не сработала")
-	}
-
 	for shortURL, originalURL := range newData {
 		err = postgre.SaveShortenedURL(conn, originalURL, shortURL)
 		if err != nil {
 			log.Println("Запись не произошла")
+			w.WriteHeader(http.StatusConflict)
+			fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
+			if err != nil {
+				return
+			}
+			fmt.Print(fprintf)
+
 		}
 	}
 	///////////////////////
