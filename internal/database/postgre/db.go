@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -43,17 +42,10 @@ func SaveShortenedURL(conn *pgxpool.Pool, originalURL, shortURL string) error {
 				VALUES 
 				    ($1, $2)`,
 		originalURL, shortURL)
-	if err != nil {
-		switch e := err.(type) {
-		case *pgconn.PgError: // Используйте тип ошибки из вашей библиотеки, если он отличается
-			if e.Code == "23505" {
-				// Обработка ошибки уникальности
-				return e
-			}
-		default:
-			// Обработка других ошибок
-			// Возможно, вам стоит логгировать их или выполнить другие действия
-		}
-	}
+	return err
+}
+
+func DeleteAllRecords(conn *pgxpool.Pool) error {
+	_, err := conn.Exec(context.Background(), "DELETE FROM short_urls")
 	return err
 }
