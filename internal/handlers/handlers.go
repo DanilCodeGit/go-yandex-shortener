@@ -96,6 +96,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		fmt.Print(fprintf)
+		return
 	}
 	///////////////////////
 
@@ -182,6 +183,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 				return
 			}
 			fmt.Print(fprintf)
+			return
 		}
 	}
 	///////////////////////
