@@ -89,7 +89,12 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	code := postgre.SaveShortenedURL(conn, url, shortURL)
 	if code == "23505" {
 		log.Println("Запись не произошла")
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusConflict)
+		fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
+		if err != nil {
+			return
+		}
+		fmt.Print(fprintf)
 		return
 	}
 
@@ -183,8 +188,14 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		code := postgre.SaveShortenedURL(conn, originalURL, shortURL)
 		if code == "23505" {
 			log.Println("Запись не произошла")
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusConflict)
+			fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
+			if err != nil {
+				return
+			}
+			fmt.Print(fprintf)
 			return
+
 		}
 	}
 
@@ -269,9 +280,15 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 		code := postgre.SaveShortenedURL(conn, originalURL, shortURL)
 		if code == "23505" {
 			log.Println("Запись не произошла")
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusConflict)
+			fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
+			if err != nil {
+				return
+			}
+			fmt.Print(fprintf)
 			return
 		}
+
 	}
 
 	///////////////////////
