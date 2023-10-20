@@ -184,19 +184,30 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		log.Println("База не создана")
 	}
 
-	for shortURL, originalURL := range newData {
-		code := postgre.SaveShortenedURL(conn, originalURL, shortURL)
-		if code == "23505" {
-			log.Println("Запись не произошла")
-			w.WriteHeader(http.StatusConflict)
-			fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
-			if err != nil {
-				return
-			}
-			fmt.Print(fprintf)
+	//for shortURL, originalURL := range newData {
+	//	code := postgre.SaveShortenedURL(conn, originalURL, shortURL)
+	//	if code == "23505" {
+	//		log.Println("Запись не произошла")
+	//		w.WriteHeader(http.StatusConflict)
+	//		fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
+	//		if err != nil {
+	//			return
+	//		}
+	//		fmt.Print(fprintf)
+	//		return
+	//
+	//	}
+	//}
+	code := postgre.SaveShortenedURL(conn, url, shortURL)
+	if code == "23505" {
+		log.Println("Запись не произошла")
+		w.WriteHeader(http.StatusConflict)
+		fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
+		if err != nil {
 			return
-
 		}
+		fmt.Print(fprintf)
+		return
 	}
 
 	///////////////////////
