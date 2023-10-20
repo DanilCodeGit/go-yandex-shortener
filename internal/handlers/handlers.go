@@ -77,7 +77,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	////////////////////// DATABASE
-	if tools.IsFlagAndEnvSet(*cfg.FlagDataBaseDSN) {
+	if tools.IsFlagAndEnvSet("DATABASE_DSN") {
 		conn, err := postgre.DBConn(context.Background())
 		if err != nil {
 			log.Println("Неудачное подключение")
@@ -166,7 +166,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		return
 	}
 	////////////////////// DATABASE
-	if tools.IsFlagAndEnvSet(*cfg.FlagDataBaseDSN) {
+	if tools.IsFlagAndEnvSet("DATABASE_DSN") {
 		conn, err := postgre.DBConn(context.Background())
 		if err != nil {
 			log.Println("Неудачное подключение")
