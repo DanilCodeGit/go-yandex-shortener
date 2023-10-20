@@ -86,19 +86,24 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 		log.Println("База не создана")
 	}
 
-	code, err := postgre.SaveShortenedURL(conn, url, shortURL)
-
-	if code == 1 {
-		log.Println("Запись не произошла:", err)
-		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusConflict)
-		fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
-		if err != nil {
-			return
-		}
-		fmt.Print(fprintf)
+	code := postgre.SaveShortenedURL(conn, url, shortURL)
+	if code == "23505" {
+		log.Println("Запись не произошла")
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	//if code == 1 {
+	//	log.Println("Запись не произошла:", err)
+	//	w.Header().Set("Content-Type", "text/plain")
+	//	w.WriteHeader(http.StatusConflict)
+	//	fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
+	//	if err != nil {
+	//		return
+	//	}
+	//	fmt.Print(fprintf)
+	//	return
+	//}
 
 	///////////////////////
 
@@ -175,16 +180,10 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	}
 
 	for shortURL, originalURL := range newData {
-		code, err := postgre.SaveShortenedURL(conn, originalURL, shortURL)
-		if code == 1 {
-			log.Println("Запись не произошла:", err)
-			w.Header().Set("Content-Type", "text/plain")
-			w.WriteHeader(http.StatusConflict)
-			fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
-			if err != nil {
-				return
-			}
-			fmt.Print(fprintf)
+		code := postgre.SaveShortenedURL(conn, originalURL, shortURL)
+		if code == "23505" {
+			log.Println("Запись не произошла")
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	}
@@ -267,9 +266,11 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("База не создана")
 	}
 	for shortURL, originalURL := range newData {
-		code, err := postgre.SaveShortenedURL(conn, originalURL, shortURL)
-		if err != nil || code != 0 {
+		code := postgre.SaveShortenedURL(conn, originalURL, shortURL)
+		if code == "23505" {
 			log.Println("Запись не произошла")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 	}
 

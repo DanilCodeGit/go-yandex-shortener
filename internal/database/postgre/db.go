@@ -2,14 +2,15 @@ package postgre
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/lib/pq"
 )
 
 func DBConn(ctx context.Context) (conn *pgxpool.Pool, err error) {
@@ -37,7 +38,7 @@ func CreateTable(conn *pgxpool.Pool) error {
 	return err
 }
 
-// func SaveShortenedURL(conn *pgxpool.Pool, originalURL, shortURL string) error {
+// SaveShortenedURL func SaveShortenedURL(conn *pgxpool.Pool, originalURL, shortURL string) error {
 //
 //		_, err := conn.Exec(context.Background(),
 //			`INSERT INTO
@@ -47,25 +48,21 @@ func CreateTable(conn *pgxpool.Pool) error {
 //			originalURL, shortURL)
 //		return err
 //	}
-func SaveShortenedURL(conn *pgxpool.Pool, originalURL, shortURL string) (int, error) {
+func SaveShortenedURL(conn *pgxpool.Pool, originalURL, shortURL string) (code string) {
 	_, err := conn.Exec(context.Background(),
 		`INSERT INTO 
 			short_urls (original_url, short_url) 
 			VALUES 
 			($1, $2)`,
 		originalURL, shortURL)
-
 	if err != nil {
-		switch e := err.(type) {
-		case *pq.Error:
-			switch e.Code {
-			case "23505":
-				fmt.Println("Duplicate")
-				return 1, err
-			default:
-				return -1, err
-			}
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			fmt.Println(pgErr.Message)
+			fmt.Println(pgErr.Code)
+			return pgErr.Code
 		}
 	}
-	return 0, nil
+
+	return ""
 }
