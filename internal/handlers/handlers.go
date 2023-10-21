@@ -1,8 +1,3 @@
-// Добавить функцию сохранения json в файле
-// Добавить тесты
-// Исправить storage (Использовать структуру storage)
-
-// Работающий вариант
 package handlers
 
 import (
@@ -66,7 +61,6 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	shortURL := tools.HashURL(url)
 
-	//st[ShortURL] = url
 	st.SetURL(shortURL, url)
 	// Преобразование данных в формат JSON
 	jsonData := make(map[string]string)
@@ -97,18 +91,6 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 		fmt.Print(fprintf)
 		return
 	}
-
-	//if code == 1 {
-	//	log.Println("Запись не произошла:", err)
-	//	w.Header().Set("Content-Type", "text/plain")
-	//	w.WriteHeader(http.StatusConflict)
-	//	fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
-	//	if err != nil {
-	//		return
-	//	}
-	//	fmt.Print(fprintf)
-	//	return
-	//}
 
 	///////////////////////
 
@@ -151,7 +133,6 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	}
 	shortURL := tools.HashURL(url)
 
-	//originalURL := st[shortURL]
 	st.SetURL(shortURL, url)
 	originalURL, _ := st.GetURL(shortURL)
 	fmt.Println("original: ", originalURL)
@@ -184,26 +165,16 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		log.Println("База не создана")
 	}
 
-	//for shortURL, originalURL := range newData {
-	//	code := postgre.SaveShortenedURL(conn, originalURL, shortURL)
-	//	if code == "23505" {
-	//		log.Println("Запись не произошла")
-	//		w.WriteHeader(http.StatusConflict)
-	//		fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
-	//		if err != nil {
-	//			return
-	//		}
-	//		fmt.Print(fprintf)
-	//		return
-	//
-	//	}
-	//}
 	code := postgre.SaveShortenedURL(conn, url, shortURL)
 	if code == "23505" {
 		log.Println("Запись не произошла")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
-		fmt.Fprintf(w, "%v", string(responseJSON))
+		fprintf, err := fmt.Fprintf(w, "%v", string(responseJSON))
+		if err != nil {
+			return
+		}
+		fmt.Println(fprintf)
 		return
 	}
 
@@ -211,7 +182,11 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, "%v", string(responseJSON))
+	fprintf, err := fmt.Fprintf(w, "%v", string(responseJSON))
+	if err != nil {
+		return
+	}
+	fmt.Println(fprintf)
 
 }
 
@@ -317,7 +292,6 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 	}
 	id := parts[1]
 
-	//originalURL := st[id]
 	originalURL, ok := st.GetURL(id)
 	if !ok {
 		log.Fatal(originalURL)
@@ -330,6 +304,7 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandlePing(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	conn, err := postgre.DBConn(context.Background())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
