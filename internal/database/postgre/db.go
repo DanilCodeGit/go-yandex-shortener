@@ -7,18 +7,22 @@ import (
 	"log"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-//type Database interface {
-//	CreateTable() error
-//	SaveShortenedURL(originalURL, shortURL string) (string, error)
-//	Close()
-//}
+//	type Database interface {
+//		CreateTable() error
+//		SaveShortenedURL(originalURL, shortURL string) (string, error)
+//		Close()
+//	}
+type DataBase interface {
+	CreateTable() error
+	SaveShortenedURL(originalURL, shortURL string) (string, error)
+	Close()
+}
 
 type DB struct {
 	Conn *pgxpool.Pool
@@ -38,7 +42,7 @@ func NewDataBase(ctx context.Context, dsn string) (*DB, error) {
 }
 
 func (db *DB) CreateTable() error {
-	createTable := `CREATE TABLE short_urls (
+	createTable := `CREATE TABLE if not exists short_urls (
 	  	original_url varchar(255) NOT NULL constraint original_url_key unique ,
 	  	short_url VARCHAR(255) NOT NULL
 
@@ -48,7 +52,6 @@ func (db *DB) CreateTable() error {
 	if err != nil {
 		log.Println(err)
 	}
-	time.Sleep(20 * time.Second)
 	return err
 }
 

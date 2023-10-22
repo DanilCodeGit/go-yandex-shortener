@@ -19,7 +19,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Database connection failed")
 	}
-	//conn.Close()
+
 	err = conn.CreateTable()
 	if err != nil {
 		log.Println("Ошибка создания таблицы")
