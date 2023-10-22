@@ -19,10 +19,15 @@ func main() {
 	if err != nil {
 		log.Fatal("Database connection failed")
 	}
+	err = conn.Conn.Ping(context.TODO())
+	if err != nil {
+		log.Println("Ping")
+		return
+	}
 
 	err = conn.CreateTable()
 	if err != nil {
-		log.Println("Ошибка создания таблицы")
+		log.Println(err)
 	}
 	cfg.InitConfig()
 
