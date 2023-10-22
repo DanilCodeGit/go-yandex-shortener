@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/DanilCodeGit/go-yandex-shortener/internal/database/postgre"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/handlers"
 	"github.com/magiconair/properties/assert"
 )
@@ -78,6 +80,7 @@ func TestHandleGet(t *testing.T) {
 
 func TestHandlePost(t *testing.T) {
 	// Создаем запрос с телом POST.
+	postgre.DBConn(context.Background())
 	requestBody := []byte("https://example.com")
 	req, err := http.NewRequest("POST", "/", strings.NewReader(string(requestBody)))
 	if err != nil {
@@ -102,6 +105,7 @@ func TestHandlePost(t *testing.T) {
 }
 
 func TestJSONHandler(t *testing.T) {
+	postgre.DBConn(context.Background())
 	// Создаем запрос с телом JSON.
 	requestBody := []byte(`{"url": "https://example.com1"}`)
 	req, err := http.NewRequest("POST", "/", strings.NewReader(string(requestBody)))
