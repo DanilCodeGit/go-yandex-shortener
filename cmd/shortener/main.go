@@ -19,6 +19,10 @@ func main() {
 	if err != nil {
 		log.Fatal("Database connection failed")
 	}
+	err = postgre.CreateTable(postgre.Conn)
+	if err != nil {
+		log.Println("База не создана")
+	}
 	cfg.InitConfig()
 
 	r := chi.NewRouter()
