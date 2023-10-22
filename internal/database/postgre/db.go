@@ -15,15 +15,16 @@ import (
 
 var Conn *pgxpool.Pool
 
-func DBConn(ctx context.Context) (conn *pgxpool.Pool, err error) {
-	conn, err = pgxpool.New(ctx, *cfg.FlagDataBaseDSN)
+func DBConn(ctx context.Context) (err error) {
+	conn, err := pgxpool.New(ctx, *cfg.FlagDataBaseDSN)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v", err)
-		return conn, err
+		return err
 	}
+	Conn = conn
 	log.Println("Успешное подключение")
 
-	return conn, err
+	return err
 }
 
 func CreateTable(conn *pgxpool.Pool) error {

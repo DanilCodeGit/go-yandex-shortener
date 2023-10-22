@@ -288,7 +288,7 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 
 func HandlePing(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	_, err := postgre.DBConn(context.Background())
+	err := postgre.DBConn(context.Background())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Fatalf("Хэндлер не может подключиться к бд")
