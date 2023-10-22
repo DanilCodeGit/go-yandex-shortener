@@ -18,6 +18,12 @@ type DB struct {
 	Conn *pgxpool.Pool
 }
 
+type Database interface {
+	CreateTable() error
+	SaveShortenedURL(originalURL, shortURL string) (string, error)
+	Close()
+}
+
 func NewDataBase(ctx context.Context, dsn string) (*DB, error) {
 	conn, err := pgxpool.New(ctx, dsn)
 	if err != nil {
