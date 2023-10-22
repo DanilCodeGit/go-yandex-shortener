@@ -72,7 +72,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	////////////////////// DATABASE
 
-	code := postgre.SaveShortenedURL(postgre.Conn, url, shortURL)
+	code, err := postgre.GlobalConn.SaveShortenedURL(url, shortURL)
 	if code == pgerrcode.UniqueViolation {
 		log.Println("Запись не произошла")
 		w.WriteHeader(http.StatusConflict)
@@ -151,7 +151,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	//if err != nil {
 	//	log.Println("База не создана")
 	//}
-	code := postgre.SaveShortenedURL(postgre.Conn, url, shortURL)
+	code, err := postgre.GlobalConn.SaveShortenedURL(url, shortURL)
 	if code == pgerrcode.UniqueViolation {
 		log.Println("Запись не произошла")
 		w.Header().Set("Content-Type", "application/json")
@@ -230,20 +230,16 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Сохранение данных в файл после обновления
-	//err = saveDataToFile(newData, *cfg.FlagFileStoragePath)
-	//if err != nil {
-	//	http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
-	//	return
-	//}
-
-	////////////////////// DATABASE
-	err = postgre.CreateTable(postgre.Conn)
+	err = saveDataToFile(newData, *cfg.FlagFileStoragePath)
 	if err != nil {
-		log.Println("База не создана")
+		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
+		return
 	}
 
+	////////////////////// DATABASE
+
 	for shortURL, originalURL := range newData {
-		code := postgre.SaveShortenedURL(postgre.Conn, originalURL, shortURL)
+		code, _ := postgre.GlobalConn.SaveShortenedURL(originalURL, shortURL)
 		if code == pgerrcode.UniqueViolation {
 			log.Println("Запись не произошла")
 			w.WriteHeader(http.StatusConflict)
@@ -288,12 +284,12 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 
 func HandlePing(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	err := postgre.DBConn(context.Background())
+	_, err := postgre.NewDataBase(context.Background(), *cfg.FlagDataBaseDSN)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Fatalf("Хэндлер не может подключиться к бд")
 	}
-	defer postgre.Conn.Close()
+	defer postgre.GlobalConn.Close()
 	w.Header().Set("Location", "Success")
 	w.WriteHeader(http.StatusOK)
 

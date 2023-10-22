@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/database/postgre"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/handlers"
 	"github.com/magiconair/properties/assert"
@@ -80,7 +81,12 @@ func TestHandleGet(t *testing.T) {
 
 func TestHandlePost(t *testing.T) {
 	// Создаем запрос с телом POST.
-	postgre.DBConn(context.Background())
+	base, err := postgre.NewDataBase(context.Background(), *cfg.FlagDataBaseDSN)
+	if err != nil {
+		return
+	}
+	defer base.Close()
+	postgre.GlobalConn = base
 	requestBody := []byte("https://example.com")
 	req, err := http.NewRequest("POST", "/", strings.NewReader(string(requestBody)))
 	if err != nil {
@@ -105,8 +111,12 @@ func TestHandlePost(t *testing.T) {
 }
 
 func TestJSONHandler(t *testing.T) {
-	postgre.DBConn(context.Background())
-	// Создаем запрос с телом JSON.
+	base, err := postgre.NewDataBase(context.Background(), *cfg.FlagDataBaseDSN)
+	if err != nil {
+		return
+	}
+	defer base.Close()
+	postgre.GlobalConn = base
 	requestBody := []byte(`{"url": "https://example.com1"}`)
 	req, err := http.NewRequest("POST", "/", strings.NewReader(string(requestBody)))
 	if err != nil {

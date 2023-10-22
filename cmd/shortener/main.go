@@ -15,11 +15,12 @@ import (
 )
 
 func main() {
-	err := postgre.DBConn(context.Background())
+	conn, err := postgre.NewDataBase(context.Background(), *cfg.FlagDataBaseDSN)
 	if err != nil {
 		log.Fatal("Database connection failed")
 	}
-
+	conn.Close()
+	postgre.GlobalConn = conn
 	cfg.InitConfig()
 
 	r := chi.NewRouter()
