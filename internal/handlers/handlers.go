@@ -72,7 +72,10 @@ func HandlePost(db *postgre.DB) http.HandlerFunc {
 		}
 
 		////////////////////// DATABASE
-
+		err = db.CreateTable()
+		if err != nil {
+			log.Println("Ошибка создания таблицы")
+		}
 		code, _ := db.SaveShortenedURL(url, shortURL)
 		if code == pgerrcode.UniqueViolation {
 			log.Println("Запись не произошла")
@@ -149,7 +152,10 @@ func JSONHandler(db *postgre.DB) http.HandlerFunc {
 			return
 		}
 		////////////////////// DATABASE
-
+		err = db.CreateTable()
+		if err != nil {
+			log.Println("Ошибка создания таблицы")
+		}
 		code, _ := db.SaveShortenedURL(url, shortURL)
 		if code == pgerrcode.UniqueViolation {
 			log.Println("Запись не произошла")
