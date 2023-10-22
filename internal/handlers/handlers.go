@@ -16,11 +16,9 @@ import (
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/storage"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/tools"
 	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var st = *storage.NewStorage()
-var conn *pgxpool.Pool
 
 type URLData struct {
 	ShortURL    string `json:"short_url"`
@@ -74,12 +72,12 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	////////////////////// DATABASE
 
-	err = postgre.CreateTable(conn)
+	err = postgre.CreateTable(postgre.Conn)
 	if err != nil {
 		log.Println("База не создана")
 	}
 
-	code := postgre.SaveShortenedURL(conn, url, shortURL)
+	code := postgre.SaveShortenedURL(postgre.Conn, url, shortURL)
 	if code == pgerrcode.UniqueViolation {
 		log.Println("Запись не произошла")
 		w.WriteHeader(http.StatusConflict)
@@ -154,12 +152,12 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		return
 	}
 	////////////////////// DATABASE
-	err = postgre.CreateTable(conn)
+	err = postgre.CreateTable(postgre.Conn)
 	if err != nil {
 		log.Println("База не создана")
 	}
 
-	code := postgre.SaveShortenedURL(conn, url, shortURL)
+	code := postgre.SaveShortenedURL(postgre.Conn, url, shortURL)
 	if code == pgerrcode.UniqueViolation {
 		log.Println("Запись не произошла")
 		w.Header().Set("Content-Type", "application/json")
@@ -246,12 +244,12 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	////////////////////// DATABASE
 
-	err = postgre.CreateTable(conn)
+	err = postgre.CreateTable(postgre.Conn)
 	if err != nil {
 		log.Println("База не создана")
 	}
 	for shortURL, originalURL := range newData {
-		code := postgre.SaveShortenedURL(conn, originalURL, shortURL)
+		code := postgre.SaveShortenedURL(postgre.Conn, originalURL, shortURL)
 		if code == pgerrcode.UniqueViolation {
 			log.Println("Запись не произошла")
 			w.WriteHeader(http.StatusConflict)
@@ -301,7 +299,7 @@ func HandlePing(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Fatalf("Хэндлер не может подключиться к бд")
 	}
-	defer conn.Close()
+	defer postgre.Conn.Close()
 	w.Header().Set("Location", "Success")
 	w.WriteHeader(http.StatusOK)
 
