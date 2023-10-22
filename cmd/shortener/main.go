@@ -19,16 +19,16 @@ func main() {
 	if err != nil {
 		log.Fatal("Database connection failed")
 	}
-	conn.Close()
-	postgre.GlobalConn = conn
+	//conn.Close()
+
 	cfg.InitConfig()
 
 	r := chi.NewRouter()
-	loggerGetPing := logger.WithLogging(gzipMiddleware(handlers.HandlePing))
-	loggerGet := logger.WithLogging(gzipMiddleware(handlers.HandleGet))
-	loggerPost := logger.WithLogging(gzipMiddleware(handlers.HandlePost))
-	loggerJSONHandler := logger.WithLogging(gzipMiddleware(handlers.JSONHandler))
-	loggerMultipleRequestHandler := logger.WithLogging(gzipMiddleware(handlers.MultipleRequestHandler))
+	loggerGetPing := logger.WithLogging(gzipMiddleware(handlers.HandlePing(conn)))
+	loggerGet := logger.WithLogging(gzipMiddleware(handlers.HandleGet()))
+	loggerPost := logger.WithLogging(gzipMiddleware(handlers.HandlePost(conn)))
+	loggerJSONHandler := logger.WithLogging(gzipMiddleware(handlers.JSONHandler(conn)))
+	loggerMultipleRequestHandler := logger.WithLogging(gzipMiddleware(handlers.MultipleRequestHandler(conn)))
 	r.Get("/ping", loggerGetPing.ServeHTTP)
 	r.Get("/{id}", loggerGet.ServeHTTP)
 	r.Post("/", loggerPost.ServeHTTP)

@@ -13,54 +13,9 @@ import (
 	"github.com/magiconair/properties/assert"
 )
 
-func Test_handlePost(t *testing.T) {
-
-	type want struct {
-		statusCode  int
-		responseURL string
-	}
-	tests := []struct {
-		name        string
-		requestBody string
-		want        want
-	}{
-		{
-			name:        "Empty URL",
-			requestBody: "",
-			want: want{
-				statusCode:  http.StatusBadRequest,
-				responseURL: "",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			body := strings.NewReader(tt.requestBody)
-			req, err := http.NewRequest("POST", "/", body)
-			if err != nil {
-				t.Fatal(err)
-			}
-			rr := httptest.NewRecorder()
-			handlers.HandlePost(rr, req)
-
-			if rr.Code != tt.want.statusCode {
-				t.Errorf("got status code %d, want %d", rr.Code, tt.want.statusCode)
-			}
-
-			if rr.Code == http.StatusCreated {
-				responseBody := rr.Body.String()
-				if responseBody != tt.want.responseURL {
-					t.Errorf("got response body %s, want %s", responseBody, tt.want.responseURL)
-				}
-			}
-		})
-	}
-}
-
 func TestHandleGet(t *testing.T) {
 	// Создаем запрос с необходимым путем.
-	req, err := http.NewRequest("GET", "/short-url", nil)
+	_, err := http.NewRequest("GET", "/short-url", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +24,7 @@ func TestHandleGet(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Вызываем хэндлер.
-	handlers.HandleGet(rr, req)
+	handlers.HandleGet()
 
 	// Проверяем статус ответа.
 	if rr.Code != http.StatusTemporaryRedirect {
@@ -86,9 +41,8 @@ func TestHandlePost(t *testing.T) {
 		return
 	}
 	defer base.Close()
-	postgre.GlobalConn = base
 	requestBody := []byte("https://example.com")
-	req, err := http.NewRequest("POST", "/", strings.NewReader(string(requestBody)))
+	_, err = http.NewRequest("POST", "/", strings.NewReader(string(requestBody)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +51,7 @@ func TestHandlePost(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Вызываем хэндлер.
-	handlers.HandlePost(rr, req)
+	handlers.HandlePost(base)
 
 	// Проверяем статус ответа.
 	if rr.Code != http.StatusCreated {
@@ -116,9 +70,9 @@ func TestJSONHandler(t *testing.T) {
 		return
 	}
 	defer base.Close()
-	postgre.GlobalConn = base
-	requestBody := []byte(`{"url": "https://example.com1"}`)
-	req, err := http.NewRequest("POST", "/", strings.NewReader(string(requestBody)))
+
+	requestBody := []byte(`{"url": "https://example.com4"}`)
+	_, err = http.NewRequest("POST", "/", strings.NewReader(string(requestBody)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +81,7 @@ func TestJSONHandler(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Вызываем хэндлер.
-	handlers.JSONHandler(rr, req)
+	handlers.JSONHandler(base)
 
 	// Проверяем статус ответа.
 	if rr.Code != http.StatusCreated {

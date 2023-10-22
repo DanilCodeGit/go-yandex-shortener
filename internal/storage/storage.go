@@ -2,11 +2,11 @@ package storage
 
 import "sync"
 
-type ST interface {
-	SetURL(key, value string)
-	GetURL(key string) (string, bool)
-	DeleteURL(key string)
-}
+//	type ST interface {
+//		SetURL(key, value string)
+//		GetURL(key string) (string, bool)
+//		DeleteURL(key string)
+//	}
 type Storage struct {
 	URLsStore map[string]string
 	mu        sync.RWMutex

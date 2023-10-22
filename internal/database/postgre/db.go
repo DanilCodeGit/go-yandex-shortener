@@ -6,22 +6,22 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-var GlobalConn *DB
+//type Database interface {
+//	CreateTable() error
+//	SaveShortenedURL(originalURL, shortURL string) (string, error)
+//	Close()
+//}
 
 type DB struct {
 	Conn *pgxpool.Pool
-}
-
-type Database interface {
-	CreateTable() error
-	SaveShortenedURL(originalURL, shortURL string) (string, error)
-	Close()
+	mu   sync.RWMutex
 }
 
 func NewDataBase(ctx context.Context, dsn string) (*DB, error) {
@@ -37,21 +37,26 @@ func NewDataBase(ctx context.Context, dsn string) (*DB, error) {
 }
 
 func (db *DB) CreateTable() error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
 	createTable := `CREATE TABLE IF NOT EXISTS short_urls (
 	  	original_url varchar(255) NOT NULL constraint original_url_key unique ,
 	  	short_url VARCHAR(255) NOT NULL
 
 )`
 
-	_, err := db.Conn.Exec(context.Background(), createTable)
+	_, err := db.Conn.Exec(context.TODO(), createTable)
 	if err != nil {
 		log.Println(err)
 	}
+
 	return err
 }
 
 func (db *DB) SaveShortenedURL(originalURL, shortURL string) (string, error) {
-	_, err := db.Conn.Exec(context.Background(),
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	_, err := db.Conn.Exec(context.TODO(),
 		`INSERT INTO 
 			short_urls (original_url, short_url) 
 			VALUES 
@@ -70,7 +75,10 @@ func (db *DB) SaveShortenedURL(originalURL, shortURL string) (string, error) {
 }
 
 func (db *DB) Close() {
+	db.mu.Lock()
+	defer db.mu.Unlock()
 	defer db.Conn.Close()
+
 }
 
 //func DBConn(ctx context.Context) (err error) {
