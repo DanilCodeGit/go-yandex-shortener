@@ -15,7 +15,7 @@ import (
 
 func TestHandleGet(t *testing.T) {
 	// Создаем запрос с необходимым путем.
-	_, err := http.NewRequest("GET", "/short-url", nil)
+	req, err := http.NewRequest("GET", "/short-url", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -24,7 +24,7 @@ func TestHandleGet(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Вызываем хэндлер.
-	handlers.HandleGet()
+	handlers.HandleGet().ServeHTTP(rr, req)
 
 	// Проверяем статус ответа.
 	if rr.Code != http.StatusTemporaryRedirect {
