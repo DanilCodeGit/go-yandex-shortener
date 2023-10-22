@@ -27,22 +27,22 @@ func DBConn(ctx context.Context) (err error) {
 	return err
 }
 
-func CreateTable(Conn *pgxpool.Pool) error {
+func CreateTable(conn *pgxpool.Pool) error {
 	createTable := `CREATE TABLE IF NOT EXISTS short_urls (
 	  	original_url varchar(255) NOT NULL constraint original_url_key unique ,
 	  	short_url VARCHAR(255) NOT NULL
 
 )`
 
-	_, err := Conn.Exec(context.Background(), createTable)
+	_, err := conn.Exec(context.Background(), createTable)
 	if err != nil {
 		log.Println(err)
 	}
 	return err
 }
 
-func SaveShortenedURL(Conn *pgxpool.Pool, originalURL, shortURL string) (code string) {
-	_, err := Conn.Exec(context.Background(),
+func SaveShortenedURL(conn *pgxpool.Pool, originalURL, shortURL string) (code string) {
+	_, err := conn.Exec(context.Background(),
 		`INSERT INTO 
 			short_urls (original_url, short_url) 
 			VALUES 

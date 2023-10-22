@@ -244,6 +244,7 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("База не создана")
 	}
+
 	for shortURL, originalURL := range newData {
 		code := postgre.SaveShortenedURL(postgre.Conn, originalURL, shortURL)
 		if code == pgerrcode.UniqueViolation {
