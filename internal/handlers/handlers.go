@@ -71,10 +71,10 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	////////////////////// DATABASE
-	err = postgre.CreateTable(postgre.Conn)
-	if err != nil {
-		log.Println("База не создана")
-	}
+	//err = postgre.CreateTable(postgre.Conn)
+	//if err != nil {
+	//	log.Println("База не создана")
+	//}
 	code := postgre.SaveShortenedURL(postgre.Conn, url, shortURL)
 	if code == pgerrcode.UniqueViolation {
 		log.Println("Запись не произошла")
@@ -150,10 +150,10 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		return
 	}
 	////////////////////// DATABASE
-	err = postgre.CreateTable(postgre.Conn)
-	if err != nil {
-		log.Println("База не создана")
-	}
+	//err = postgre.CreateTable(postgre.Conn)
+	//if err != nil {
+	//	log.Println("База не создана")
+	//}
 	code := postgre.SaveShortenedURL(postgre.Conn, url, shortURL)
 	if code == pgerrcode.UniqueViolation {
 		log.Println("Запись не произошла")
@@ -233,11 +233,11 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Сохранение данных в файл после обновления
-	err = saveDataToFile(newData, *cfg.FlagFileStoragePath)
-	if err != nil {
-		http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
-		return
-	}
+	//err = saveDataToFile(newData, *cfg.FlagFileStoragePath)
+	//if err != nil {
+	//	http.Error(w, "Failed to save data to file", http.StatusInternalServerError)
+	//	return
+	//}
 
 	////////////////////// DATABASE
 	err = postgre.CreateTable(postgre.Conn)

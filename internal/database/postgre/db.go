@@ -23,7 +23,7 @@ func DBConn(ctx context.Context) (err error) {
 	}
 	Conn = conn
 	log.Println("Успешное подключение")
-
+	err = CreateTable(conn)
 	return err
 }
 
