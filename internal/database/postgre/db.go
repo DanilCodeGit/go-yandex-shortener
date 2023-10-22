@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -47,6 +48,7 @@ func (db *DB) CreateTable() error {
 	if err != nil {
 		log.Println(err)
 	}
+	time.Sleep(20 * time.Second)
 	return err
 }
 
