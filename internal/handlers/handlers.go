@@ -15,6 +15,7 @@ import (
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/database/postgre"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/storage"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/tools"
+	"github.com/jackc/pgerrcode"
 )
 
 var st = *storage.NewStorage()
@@ -81,7 +82,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	code := postgre.SaveShortenedURL(conn, url, shortURL)
-	if code == "23505" {
+	if code == pgerrcode.UniqueViolation {
 		log.Println("Запись не произошла")
 		w.WriteHeader(http.StatusConflict)
 		fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
@@ -166,7 +167,7 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 	}
 
 	code := postgre.SaveShortenedURL(conn, url, shortURL)
-	if code == "23505" {
+	if code == pgerrcode.UniqueViolation {
 		log.Println("Запись не произошла")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
@@ -261,7 +262,7 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	for shortURL, originalURL := range newData {
 		code := postgre.SaveShortenedURL(conn, originalURL, shortURL)
-		if code == "23505" {
+		if code == pgerrcode.UniqueViolation {
 			log.Println("Запись не произошла")
 			w.WriteHeader(http.StatusConflict)
 			fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
