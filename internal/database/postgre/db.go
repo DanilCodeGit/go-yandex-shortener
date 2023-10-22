@@ -37,7 +37,7 @@ func NewDataBase(ctx context.Context, dsn string) (*DB, error) {
 }
 
 func (db *DB) CreateTable() error {
-	createTable := `CREATE TABLE IF NOT EXISTS short_urls (
+	createTable := `CREATE TABLE short_urls (
 	  	original_url varchar(255) NOT NULL constraint original_url_key unique ,
 	  	short_url VARCHAR(255) NOT NULL
 
