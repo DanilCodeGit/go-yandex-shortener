@@ -243,7 +243,10 @@ func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 		}
 
 		////////////////////// DATABASE
-
+		err = db.CreateTable()
+		if err != nil {
+			log.Println("Ошибка создания таблицы")
+		}
 		for shortURL, originalURL := range newData {
 			code, _ := db.SaveShortenedURL(originalURL, shortURL)
 			if code == pgerrcode.UniqueViolation {
