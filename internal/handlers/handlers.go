@@ -16,9 +16,11 @@ import (
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/storage"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/tools"
 	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var st = *storage.NewStorage()
+var conn *pgxpool.Pool
 
 type URLData struct {
 	ShortURL    string `json:"short_url"`
@@ -72,10 +74,6 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	////////////////////// DATABASE
 
-	conn, err := postgre.DBConn(context.Background())
-	if err != nil {
-		log.Println("Неудачное подключение")
-	}
 	err = postgre.CreateTable(conn)
 	if err != nil {
 		log.Println("База не создана")
@@ -126,7 +124,6 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		return
 	}
 
-	//url, found := st["url"]
 	url, found := st.GetURL("url")
 	if !found {
 		http.Error(w, "Missing 'url' field in JSON", http.StatusBadRequest)
@@ -157,10 +154,6 @@ func JSONHandler(w http.ResponseWriter, req *http.Request) { //POST
 		return
 	}
 	////////////////////// DATABASE
-	conn, err := postgre.DBConn(context.Background())
-	if err != nil {
-		log.Println("Неудачное подключение")
-	}
 	err = postgre.CreateTable(conn)
 	if err != nil {
 		log.Println("База не создана")
@@ -252,10 +245,7 @@ func MultipleRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	////////////////////// DATABASE
-	conn, err := postgre.DBConn(context.Background())
-	if err != nil {
-		log.Println("Неудачное подключение")
-	}
+
 	err = postgre.CreateTable(conn)
 	if err != nil {
 		log.Println("База не создана")
@@ -306,7 +296,7 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 
 func HandlePing(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	conn, err := postgre.DBConn(context.Background())
+	err := postgre.DBConn(context.Background())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Fatalf("Хэндлер не может подключиться к бд")

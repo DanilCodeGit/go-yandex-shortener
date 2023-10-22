@@ -1,18 +1,24 @@
 package main
 
 import (
+	"context"
+	"log"
 	"net/http"
 	"strings"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/cmd/shortener/gzip"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
+	"github.com/DanilCodeGit/go-yandex-shortener/internal/database/postgre"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/handlers"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/logger"
 	"github.com/go-chi/chi/v5"
 )
 
 func main() {
-
+	err := postgre.DBConn(context.Background())
+	if err != nil {
+		log.Fatal("Database connection failed")
+	}
 	cfg.InitConfig()
 
 	r := chi.NewRouter()
@@ -27,7 +33,7 @@ func main() {
 	r.Post("/api/shorten", loggerJSONHandler.ServeHTTP)
 	r.Post("/api/shorten/batch", loggerMultipleRequestHandler.ServeHTTP)
 
-	err := http.ListenAndServe(*cfg.FlagServerAddress, r)
+	err = http.ListenAndServe(*cfg.FlagServerAddress, r)
 	if err != nil {
 		panic(err)
 	}
