@@ -18,7 +18,6 @@ import (
 func main() {
 	cfg.InitConfig()
 
-	log.Println("Сервер получил такой DSN:", *cfg.FlagDataBaseDSN)
 	conn, err := postgre.NewDataBase(context.Background(), *cfg.FlagDataBaseDSN)
 	if err != nil {
 		log.Fatal("Database connection failed")
