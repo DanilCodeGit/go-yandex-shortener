@@ -5,7 +5,6 @@ import (
 	_ "database/sql"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/cmd/shortener/gzip"
@@ -17,17 +16,17 @@ import (
 )
 
 func main() {
+	cfg.InitConfig()
+
 	log.Println("Сервер получил такой DSN:", *cfg.FlagDataBaseDSN)
 	conn, err := postgre.NewDataBase(context.Background(), *cfg.FlagDataBaseDSN)
 	if err != nil {
 		log.Fatal("Database connection failed")
-		os.Exit(1)
 	}
 	err = conn.CreateTable()
 	if err != nil {
 		log.Println(err)
 	}
-	cfg.InitConfig()
 
 	r := chi.NewRouter()
 	loggerGetPing := logger.WithLogging(gzipMiddleware(handlers.HandlePing(conn)))
