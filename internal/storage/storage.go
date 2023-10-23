@@ -2,11 +2,11 @@ package storage
 
 import "sync"
 
-//	type ST interface {
-//		SetURL(key, value string)
-//		GetURL(key string) (string, bool)
-//		DeleteURL(key string)
-//	}
+type ST interface {
+	SetURL(key, value string)
+	GetURL(key string) (string, bool)
+	DeleteURL(key string)
+}
 type Storage struct {
 	URLsStore map[string]string
 	mu        sync.RWMutex
@@ -33,4 +33,27 @@ func (s *Storage) DeleteURL(key string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.URLsStore, key)
+}
+
+type BatchStorage struct {
+	BatchesStorage map[string]string
+	mu             sync.RWMutex
+}
+
+func (s *BatchStorage) SetURL(key, value string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.BatchesStorage[key] = value
+}
+func (s *BatchStorage) GetURL(key string) (string, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	value := s.BatchesStorage[key]
+	return value, true
+}
+
+func (s *BatchStorage) DeleteURL(key string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.BatchesStorage, key)
 }

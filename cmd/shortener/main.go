@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
+	_ "database/sql"
 	"log"
 	"net/http"
+	"os"
 	"strings"
-
-	_ "database/sql"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/cmd/shortener/gzip"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
@@ -17,11 +17,12 @@ import (
 )
 
 func main() {
+	log.Println("Сервер получил такой DSN:", *cfg.FlagDataBaseDSN)
 	conn, err := postgre.NewDataBase(context.Background(), *cfg.FlagDataBaseDSN)
 	if err != nil {
 		log.Fatal("Database connection failed")
+		os.Exit(1)
 	}
-
 	err = conn.CreateTable()
 	if err != nil {
 		log.Println(err)

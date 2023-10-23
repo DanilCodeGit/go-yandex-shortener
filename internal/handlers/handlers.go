@@ -209,7 +209,7 @@ func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 			tmp := hash
 			shortURL := "http://localhost:8080" + "/" + hash
 			st.SetURL(tmp, item.OriginalURL)
-			//st[tmp] = item.OriginalURL
+
 			shortenData = append(shortenData, ShortenStruct{
 				CorrelationID: item.CorrelationID,
 				ShortURL:      shortURL,
