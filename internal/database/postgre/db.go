@@ -8,8 +8,9 @@ import (
 	"os"
 	"sync"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	//"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -21,12 +22,12 @@ type DataBase interface {
 }
 
 type DB struct {
-	Conn *pgx.Conn
+	Conn *pgxpool.Pool
 	mu   sync.RWMutex
 }
 
 func NewDataBase(ctx context.Context, dsn string) (*DB, error) {
-	conn, err := pgx.Connect(ctx, dsn)
+	conn, err := pgxpool.New(ctx, dsn)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v", err)
 		return nil, err
@@ -71,7 +72,7 @@ func (db *DB) SaveShortenedURL(originalURL, shortURL string) (string, error) {
 }
 
 func (db *DB) Close() {
-	defer db.Conn.Close(context.TODO())
+	defer db.Conn.Close()
 }
 
 //func DBConn(ctx context.Context) (err error) {
