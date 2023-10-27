@@ -263,15 +263,6 @@ func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 
 func HandleGet() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//// Разбить путь запроса на части
-		//parts := strings.Split(r.URL.Path, "/")
-		//
-		//// Извлечь значение {id}
-		//if len(parts) < 2 || parts[1] == "" {
-		//	http.Error(w, "Некорректный запрос", http.StatusBadRequest)
-		//	return
-		//}
-		//id := parts[1]
 		id := chi.URLParam(r, "id")
 		originalURL, ok := st.GetURL(id)
 		if !ok {
@@ -296,5 +287,10 @@ func HandlePing(db *postgre.DB) http.HandlerFunc {
 		db.Close()
 		w.Header().Set("Location", "Success")
 		w.WriteHeader(http.StatusOK)
+	}
+}
+func GetUserURLs(db *postgre.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
 	}
 }
