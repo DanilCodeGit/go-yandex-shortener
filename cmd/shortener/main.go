@@ -40,7 +40,7 @@ func main() {
 	JSONHandler := logger.WithLogging(gzipMiddleware(auth.AuthMiddleWare(handlers.JSONHandler(conn))))
 	MultipleRequestHandler := logger.WithLogging(gzipMiddleware(auth.AuthMiddleWare(handlers.MultipleRequestHandler(conn))))
 	gd := logger.WithLogging(gzipMiddleware(auth.AuthMiddleWare(handlers.GetUserURLs(conn))))
-	r.Get("api/user/urls", gd.ServeHTTP)
+	r.Get("/api/user/urls", gd.ServeHTTP)
 	r.Get("/ping", GetPing.ServeHTTP)
 	r.Get("/{id}", Get.ServeHTTP)
 	r.Post("/", Post.ServeHTTP)
