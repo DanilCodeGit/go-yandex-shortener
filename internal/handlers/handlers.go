@@ -49,7 +49,6 @@ func saveDataToFile(data map[string]string, filePath string) error {
 
 func HandlePost(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
 		cookie, _ := r.Cookie("jwt")
 		userID := auth.GetUserId(cookie.Value)
 		st.UserID = userID
@@ -110,6 +109,9 @@ func HandlePost(db *postgre.DB) http.HandlerFunc {
 
 func JSONHandler(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		cookie, _ := req.Cookie("jwt")
+		userID := auth.GetUserId(cookie.Value)
+		st.UserID = userID
 		ctx := req.Context()
 		var buf bytes.Buffer
 		// читаем тело запроса
@@ -187,6 +189,9 @@ type Multi struct {
 
 func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		cookie, _ := r.Cookie("jwt")
+		userID := auth.GetUserId(cookie.Value)
+		st.UserID = userID
 		ctx := r.Context()
 		var m []Multi
 		var buf bytes.Buffer
@@ -296,12 +301,6 @@ func HandlePing(db *postgre.DB) http.HandlerFunc {
 	}
 }
 
-type URLInfo struct {
-	ShortURL    string `json:"short_url"`
-	OriginalURL string `json:"original_url"`
-	UserID      int    `json:"user_id"`
-}
-
 var userURLs = map[int][]*storage.Storage{}
 
 func GetUserURLs() http.HandlerFunc {
@@ -327,6 +326,17 @@ func GetUserURLs() http.HandlerFunc {
 		// Поиск сокращенных URL для данного пользователя
 		urls, exists := userURLs[userID]
 
+		var formatURLs []URLData
+		for _, userStorage := range urls {
+			for shortURL, originalURL := range userStorage.URLsStore {
+				formatURLs = append(formatURLs, URLData{
+					ShortURL:    shortURL,
+					OriginalURL: originalURL,
+				})
+			}
+		}
+		log.Println("formatURLs: ", formatURLs)
+
 		if !exists || len(urls) == 0 {
 			w.WriteHeader(http.StatusNoContent)
 			return
@@ -334,6 +344,7 @@ func GetUserURLs() http.HandlerFunc {
 		log.Println(userURLs)
 		// Отправка сокращенных URL в формате JSON
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(urls)
+		json.NewEncoder(w).Encode(formatURLs)
+
 	}
 }
