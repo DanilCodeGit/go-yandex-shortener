@@ -325,7 +325,7 @@ func GetUserURLs() http.HandlerFunc {
 		// Получить куку JWT из запроса
 		cookie, err := r.Cookie("jwt")
 		if err != nil || cookie.Value == "" {
-			http.Error(w, "Необходима аутентификация", http.StatusUnauthorized)
+			http.Error(w, "Необходима аутентификация", http.StatusNoContent)
 			return
 		}
 
