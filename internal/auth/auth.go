@@ -18,7 +18,7 @@ type Claims struct {
 }
 
 const TokenExp = time.Hour * 3
-const SecretKey = "egfGT&ghB786gLKH$(&*h8ho4O"
+const SecretKey = "supersecretkey"
 
 // BuildJWTString создаёт токен и возвращает его в виде строки.
 func BuildJWTString(id int) (string, error) {

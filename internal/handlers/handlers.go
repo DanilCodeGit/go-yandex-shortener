@@ -52,6 +52,7 @@ func HandlePost(db *postgre.DB) http.HandlerFunc {
 		cookie, err := r.Cookie("jwt")
 		if err != nil || cookie.Value == "" {
 			http.Error(w, "Zalupa", http.StatusUnauthorized)
+			log.Println("Ошибка куки: ", err)
 			return
 		}
 		userID := auth.GetUserID(cookie.Value)
