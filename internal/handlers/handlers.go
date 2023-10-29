@@ -49,7 +49,11 @@ func saveDataToFile(data map[string]string, filePath string) error {
 
 func HandlePost(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cookie, _ := r.Cookie("jwt")
+		cookie, err := r.Cookie("jwt")
+		if err != nil || cookie.Value == "" {
+			http.Error(w, "Необходима аутентификация", http.StatusUnauthorized)
+			return
+		}
 		userID := auth.GetUserId(cookie.Value)
 		st.UserID = userID
 		ctx := r.Context()
@@ -109,13 +113,17 @@ func HandlePost(db *postgre.DB) http.HandlerFunc {
 
 func JSONHandler(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		cookie, _ := req.Cookie("jwt")
+		cookie, err := req.Cookie("jwt")
+		if err != nil || cookie.Value == "" {
+			http.Error(w, "Необходима аутентификация", http.StatusUnauthorized)
+			return
+		}
 		userID := auth.GetUserId(cookie.Value)
 		st.UserID = userID
 		ctx := req.Context()
 		var buf bytes.Buffer
 		// читаем тело запроса
-		_, err := buf.ReadFrom(req.Body)
+		_, err = buf.ReadFrom(req.Body)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -189,14 +197,18 @@ type Multi struct {
 
 func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cookie, _ := r.Cookie("jwt")
+		cookie, err := r.Cookie("jwt")
+		if err != nil || cookie.Value == "" {
+			http.Error(w, "Необходима аутентификация", http.StatusUnauthorized)
+			return
+		}
 		userID := auth.GetUserId(cookie.Value)
 		st.UserID = userID
 		ctx := r.Context()
 		var m []Multi
 		var buf bytes.Buffer
 
-		_, err := buf.ReadFrom(r.Body)
+		_, err = buf.ReadFrom(r.Body)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
