@@ -332,7 +332,7 @@ func GetUserURLs() http.HandlerFunc {
 		// Извлечь UserID из куки
 		userID := auth.GetUserID(cookie.Value)
 		if userID == -1 {
-			http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
+			http.Error(w, "Недействительный JWT-токен", http.StatusNoContent)
 			return
 		}
 		userStorage := storage.Storage{
