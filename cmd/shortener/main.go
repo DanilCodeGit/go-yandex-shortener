@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/cmd/shortener/gzip"
-	"github.com/DanilCodeGit/go-yandex-shortener/internal/auth"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/database/postgre"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/handlers"
@@ -34,12 +33,12 @@ func main() {
 	//loggerPost := logger.WithLogging(gzipMiddleware(handlers.HandlePost(conn)))
 	//loggerJSONHandler := logger.WithLogging(gzipMiddleware(handlers.JSONHandler(conn)))
 	//loggerMultipleRequestHandler := logger.WithLogging(gzipMiddleware(handlers.MultipleRequestHandler(conn)))
-	GetPing := logger.WithLogging(gzipMiddleware(auth.AuthMiddleWare(handlers.HandlePing(conn))))
-	Get := logger.WithLogging(gzipMiddleware(auth.AuthMiddleWare(handlers.HandleGet())))
-	Post := logger.WithLogging(gzipMiddleware(auth.AuthMiddleWare(handlers.HandlePost(conn))))
-	JSONHandler := logger.WithLogging(gzipMiddleware(auth.AuthMiddleWare(handlers.JSONHandler(conn))))
-	MultipleRequestHandler := logger.WithLogging(gzipMiddleware(auth.AuthMiddleWare(handlers.MultipleRequestHandler(conn))))
-	gd := logger.WithLogging(gzipMiddleware(auth.AuthMiddleWare(handlers.GetUserURLs(conn))))
+	GetPing := logger.WithLogging(gzipMiddleware(handlers.HandlePing(conn)))
+	Get := logger.WithLogging(gzipMiddleware((handlers.HandleGet())))
+	Post := logger.WithLogging(gzipMiddleware(handlers.HandlePost(conn)))
+	JSONHandler := logger.WithLogging(gzipMiddleware(handlers.JSONHandler(conn)))
+	MultipleRequestHandler := logger.WithLogging(gzipMiddleware(handlers.MultipleRequestHandler(conn)))
+	gd := logger.WithLogging(gzipMiddleware(handlers.GetUserURLs(conn)))
 	r.Get("/api/user/urls", gd.ServeHTTP)
 	r.Get("/ping", GetPing.ServeHTTP)
 	r.Get("/{id}", Get.ServeHTTP)
