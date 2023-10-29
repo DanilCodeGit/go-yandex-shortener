@@ -17,7 +17,7 @@ type Claims struct {
 	UserID int
 }
 
-const TokenExp = time.Hour * 3
+const TokenExp = time.Hour * 192
 const SecretKey = "supersecretkey"
 
 // BuildJWTString создаёт токен и возвращает его в виде строки.
