@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/DanilCodeGit/go-yandex-shortener/internal/auth"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/database/postgre"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/storage"
@@ -48,6 +49,9 @@ func saveDataToFile(data map[string]string, filePath string) error {
 
 func HandlePost(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		cookie, _ := r.Cookie("jwt")
+		userID := auth.GetUserId(cookie.Value)
+		st.UserID = userID
 		ctx := r.Context()
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -70,7 +74,7 @@ func HandlePost(db *postgre.DB) http.HandlerFunc {
 		for shortURL, originalURL := range st.URLsStore {
 			jsonData[shortURL] = originalURL
 		}
-
+		fmt.Println("storage: ", st)
 		////////////////////// DATABASE
 
 		code, _ := db.SaveShortenedURL(ctx, url, shortURL)
@@ -270,8 +274,8 @@ func HandleGet() http.HandlerFunc {
 			log.Fatal(originalURL)
 		}
 
-		fmt.Println("orig: ", originalURL)
-		fmt.Println("st: ", st.URLsStore)
+		//fmt.Println("orig: ", originalURL)
+		//fmt.Println("st: ", st.URLsStore)
 		w.Header().Set("Location", originalURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	}
@@ -292,8 +296,44 @@ func HandlePing(db *postgre.DB) http.HandlerFunc {
 	}
 }
 
-func GetUserURLs(db *postgre.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+type URLInfo struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
+	UserID      int    `json:"user_id"`
+}
 
+var userURLs = map[int][]*storage.Storage{}
+
+func GetUserURLs() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Получить куку JWT из запроса
+		cookie, err := r.Cookie("jwt")
+		if err != nil || cookie.Value == "" {
+			http.Error(w, "Необходима аутентификация", http.StatusUnauthorized)
+			return
+		}
+
+		// Извлечь UserID из куки
+		userID := auth.GetUserId(cookie.Value)
+		if userID == -1 {
+			http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
+			return
+		}
+		userStorage := &storage.Storage{
+			URLsStore: st.URLsStore,
+			UserID:    userID, // Присвойте здесь идентификатор пользователя.
+		}
+		userURLs[userID] = append(userURLs[userID], userStorage)
+		// Поиск сокращенных URL для данного пользователя
+		urls, exists := userURLs[userID]
+
+		if !exists || len(urls) == 0 {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		log.Println(userURLs)
+		// Отправка сокращенных URL в формате JSON
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(urls)
 	}
 }

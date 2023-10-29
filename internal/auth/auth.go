@@ -3,6 +3,7 @@ package auth
 import (
 	"encoding/binary"
 	"fmt"
+	"log"
 	"math/rand"
 	"net/http"
 	"time"
@@ -73,43 +74,6 @@ func GenerateRandomID() (int, error) {
 	return id, nil
 }
 
-//	func AuthMiddleWare(h http.HandlerFunc) http.HandlerFunc {
-//		return func(w http.ResponseWriter, r *http.Request) {
-//			// Попытка получить значение куки
-//			cookie, err := r.Cookie("jwt")
-//			if err != nil || cookie.Value == "" {
-//				id, err := GenerateRandomID()
-//				if err != nil {
-//					http.Error(w, "Unable to generate random ID", http.StatusInternalServerError)
-//					return
-//				}
-//				// Создаем JWT токен
-//				tokenString, err := BuildJWTString(id)
-//				if err != nil {
-//					http.Error(w, "Unable to create JWT token", http.StatusInternalServerError)
-//					return
-//				}
-//
-//				// Сохраняем JWT токен в куки
-//				http.SetCookie(w, &http.Cookie{
-//					Name:     "jwt",
-//					Value:    tokenString,
-//					Expires:  time.Now().Add(TOKEN_EXP),
-//					HttpOnly: true,
-//				})
-//
-//				// Продолжаем выполнение обработчика с токеном в куке
-//				h(w, r)
-//			} else {
-//				// Если куки существует, попытаемся извлечь ID из токена
-//				userID := GetUserId(cookie.Value)
-//				if userID == -1 {
-//					http.Error(w, "Invalid JWT token", http.StatusUnauthorized)
-//					return
-//				}
-//			}
-//		}
-//	}
 func AuthMiddleWare(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Попытка получить куку JWT
@@ -134,7 +98,7 @@ func AuthMiddleWare(h http.HandlerFunc) http.HandlerFunc {
 				Expires:  time.Now().Add(TOKEN_EXP),
 				HttpOnly: true,
 			})
-
+			log.Println("Cookie: ", cookie)
 			// Вызов обернутого обработчика с токеном в куке
 			h(w, r)
 		} else {
@@ -144,7 +108,7 @@ func AuthMiddleWare(h http.HandlerFunc) http.HandlerFunc {
 				http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
 				return
 			}
-
+			log.Println("Cookie: ", cookie)
 			// Вызов обернутого обработчика с извлеченным ID пользователя
 			// Вы должны передавать userID в обработчик или использовать его по необходимости
 			h(w, r)

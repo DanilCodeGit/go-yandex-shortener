@@ -25,7 +25,7 @@ func main() {
 	}
 	err = conn.CreateTable(ctx)
 	if err != nil {
-		log.Println(err)
+		log.Println("Таблица уже создана")
 	}
 
 	r := chi.NewRouter()
@@ -39,7 +39,7 @@ func main() {
 	Post := logger.WithLogging(auth.AuthMiddleWare(gzipMiddleware(handlers.HandlePost(conn))))
 	JSONHandler := logger.WithLogging(auth.AuthMiddleWare(gzipMiddleware(handlers.JSONHandler(conn))))
 	MultipleRequestHandler := logger.WithLogging(auth.AuthMiddleWare(gzipMiddleware(handlers.MultipleRequestHandler(conn))))
-	gd := logger.WithLogging(auth.AuthMiddleWare(gzipMiddleware(handlers.GetUserURLs(conn))))
+	gd := logger.WithLogging(auth.AuthMiddleWare(handlers.GetUserURLs()))
 	r.Get("/api/user/urls", gd.ServeHTTP)
 	r.Get("/ping", GetPing.ServeHTTP)
 	r.Get("/{id}", Get.ServeHTTP)
