@@ -92,9 +92,9 @@ func AuthMiddleWare(h http.HandlerFunc) http.HandlerFunc {
 
 			// Сохранение JWT-токена в куке
 			http.SetCookie(w, &http.Cookie{
-				Name:     "jwt",
-				Value:    tokenString,
-				Expires:  time.Now().Add(TOKEN_EXP),
+				Name:  "jwt",
+				Value: tokenString,
+				//Expires:  time.Now().Add(TOKEN_EXP),
 				HttpOnly: true,
 			})
 			// Вызов обернутого обработчика с токеном в куке
