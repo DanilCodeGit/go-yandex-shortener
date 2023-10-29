@@ -342,6 +342,10 @@ func GetUserURLs() http.HandlerFunc {
 		userURLs[userID] = append(userURLs[userID], userStorage)
 		// Поиск сокращенных URL для данного пользователя
 		urls, exists := userURLs[userID]
+		if !exists || len(urls) == 0 {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 
 		var formatURLs []URLData
 		for _, userStorage := range urls {
@@ -353,13 +357,9 @@ func GetUserURLs() http.HandlerFunc {
 			}
 			break
 		}
-		log.Println("formatURLs: ", formatURLs)
-
-		if !exists || len(urls) == 0 {
+		if len(formatURLs) == 0 {
 			w.WriteHeader(http.StatusNoContent)
-			return
 		}
-		log.Println("usersURLs: ", userURLs)
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(formatURLs)
