@@ -73,24 +73,61 @@ func GenerateRandomID() (int, error) {
 	return id, nil
 }
 
+//	func AuthMiddleWare(h http.HandlerFunc) http.HandlerFunc {
+//		return func(w http.ResponseWriter, r *http.Request) {
+//			// Попытка получить значение куки
+//			cookie, err := r.Cookie("jwt")
+//			if err != nil || cookie.Value == "" {
+//				id, err := GenerateRandomID()
+//				if err != nil {
+//					http.Error(w, "Unable to generate random ID", http.StatusInternalServerError)
+//					return
+//				}
+//				// Создаем JWT токен
+//				tokenString, err := BuildJWTString(id)
+//				if err != nil {
+//					http.Error(w, "Unable to create JWT token", http.StatusInternalServerError)
+//					return
+//				}
+//
+//				// Сохраняем JWT токен в куки
+//				http.SetCookie(w, &http.Cookie{
+//					Name:     "jwt",
+//					Value:    tokenString,
+//					Expires:  time.Now().Add(TOKEN_EXP),
+//					HttpOnly: true,
+//				})
+//
+//				// Продолжаем выполнение обработчика с токеном в куке
+//				h(w, r)
+//			} else {
+//				// Если куки существует, попытаемся извлечь ID из токена
+//				userID := GetUserId(cookie.Value)
+//				if userID == -1 {
+//					http.Error(w, "Invalid JWT token", http.StatusUnauthorized)
+//					return
+//				}
+//			}
+//		}
+//	}
 func AuthMiddleWare(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Попытка получить значение куки
+		// Попытка получить куку JWT
 		cookie, err := r.Cookie("jwt")
 		if err != nil || cookie.Value == "" {
 			id, err := GenerateRandomID()
 			if err != nil {
-				http.Error(w, "Unable to generate random ID", http.StatusInternalServerError)
+				http.Error(w, "Не удалось сгенерировать случайный ID", http.StatusInternalServerError)
 				return
 			}
-			// Создаем JWT токен
+			// Создание JWT-токена
 			tokenString, err := BuildJWTString(id)
 			if err != nil {
-				http.Error(w, "Unable to create JWT token", http.StatusInternalServerError)
+				http.Error(w, "Не удалось создать JWT-токен", http.StatusInternalServerError)
 				return
 			}
 
-			// Сохраняем JWT токен в куки
+			// Сохранение JWT-токена в куке
 			http.SetCookie(w, &http.Cookie{
 				Name:     "jwt",
 				Value:    tokenString,
@@ -98,15 +135,19 @@ func AuthMiddleWare(h http.HandlerFunc) http.HandlerFunc {
 				HttpOnly: true,
 			})
 
-			// Продолжаем выполнение обработчика с токеном в куке
+			// Вызов обернутого обработчика с токеном в куке
 			h(w, r)
 		} else {
-			// Если куки существует, попытаемся извлечь ID из токена
+			// Если кука существует, попытка извлечь ID пользователя из токена
 			userID := GetUserId(cookie.Value)
 			if userID == -1 {
-				http.Error(w, "Invalid JWT token", http.StatusUnauthorized)
+				http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
 				return
 			}
+
+			// Вызов обернутого обработчика с извлеченным ID пользователя
+			// Вы должны передавать userID в обработчик или использовать его по необходимости
+			h(w, r)
 		}
 	}
 }
