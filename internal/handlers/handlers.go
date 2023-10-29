@@ -347,7 +347,7 @@ func GetUserURLs() http.HandlerFunc {
 		for _, userStorage := range urls {
 			for shortURL, originalURL := range userStorage.URLsStore {
 				formatURLs = append(formatURLs, URLData{
-					ShortURL:    shortURL,
+					ShortURL:    "http://localhost:8080/" + shortURL,
 					OriginalURL: originalURL,
 				})
 			}
