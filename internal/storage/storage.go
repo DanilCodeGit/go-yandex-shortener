@@ -34,26 +34,37 @@ func (s *Storage) DeleteURL(key string) {
 	defer s.mu.Unlock()
 	delete(s.URLsStore, key)
 }
-
-type BatchStorage struct {
-	BatchesStorage map[string]string
-	mu             sync.RWMutex
-}
-
-func (s *BatchStorage) SetURL(key, value string) {
+func (s *Storage) SetBatch(key, value string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.BatchesStorage[key] = value
-}
-func (s *BatchStorage) GetURL(key string) (string, bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	value := s.BatchesStorage[key]
-	return value, true
+	s.URLsStore[key] = value
 }
 
-func (s *BatchStorage) DeleteURL(key string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	delete(s.BatchesStorage, key)
-}
+//type BatchStorage struct {
+//	BatchesStorage map[string]string
+//	mu             sync.RWMutex
+//}
+
+//func NewBatchStorage() *BatchStorage {
+//	return &BatchStorage{
+//		BatchesStorage: make(map[string]string),
+//	}
+//}
+//
+//func (s *BatchStorage) SetURL(key, value string) {
+//	s.mu.Lock()
+//	defer s.mu.Unlock()
+//	s.BatchesStorage[key] = value
+//}
+//func (s *BatchStorage) GetURL(key string) (string, bool) {
+//	s.mu.RLock()
+//	defer s.mu.RUnlock()
+//	value := s.BatchesStorage[key]
+//	return value, true
+//}
+//
+//func (s *BatchStorage) DeleteURL(key string) {
+//	s.mu.Lock()
+//	defer s.mu.Unlock()
+//	delete(s.BatchesStorage, key)
+//}
