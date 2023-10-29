@@ -3,7 +3,6 @@ package auth
 import (
 	"encoding/binary"
 	"fmt"
-	"log"
 	"math/rand"
 	"net/http"
 	"time"
@@ -98,7 +97,6 @@ func AuthMiddleWare(h http.HandlerFunc) http.HandlerFunc {
 				Expires:  time.Now().Add(TOKEN_EXP),
 				HttpOnly: true,
 			})
-			log.Println("Cookie: ", cookie)
 			// Вызов обернутого обработчика с токеном в куке
 			h(w, r)
 		} else {
@@ -108,7 +106,6 @@ func AuthMiddleWare(h http.HandlerFunc) http.HandlerFunc {
 				http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
 				return
 			}
-			log.Println("Cookie: ", cookie)
 			// Вызов обернутого обработчика с извлеченным ID пользователя
 			// Вы должны передавать userID в обработчик или использовать его по необходимости
 			h(w, r)

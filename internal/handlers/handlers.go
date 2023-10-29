@@ -49,6 +49,7 @@ func saveDataToFile(data map[string]string, filePath string) error {
 
 func HandlePost(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		cookie, _ := r.Cookie("jwt")
 		userID := auth.GetUserId(cookie.Value)
 		st.UserID = userID
@@ -74,7 +75,6 @@ func HandlePost(db *postgre.DB) http.HandlerFunc {
 		for shortURL, originalURL := range st.URLsStore {
 			jsonData[shortURL] = originalURL
 		}
-		fmt.Println("storage: ", st)
 		////////////////////// DATABASE
 
 		code, _ := db.SaveShortenedURL(ctx, url, shortURL)
@@ -274,8 +274,8 @@ func HandleGet() http.HandlerFunc {
 			log.Fatal(originalURL)
 		}
 
-		//fmt.Println("orig: ", originalURL)
-		//fmt.Println("st: ", st.URLsStore)
+		fmt.Println("orig: ", originalURL)
+		fmt.Println("st: ", st.URLsStore)
 		w.Header().Set("Location", originalURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	}
