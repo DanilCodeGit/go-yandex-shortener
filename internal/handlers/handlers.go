@@ -51,10 +51,10 @@ func HandlePost(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("jwt")
 		if err != nil || cookie.Value == "" {
-			http.Error(w, "Необходима аутентификация", http.StatusUnauthorized)
+			http.Error(w, "Zalupa", http.StatusUnauthorized)
 			return
 		}
-		userID := auth.GetUserId(cookie.Value)
+		userID := auth.GetUserID(cookie.Value)
 		st.UserID = userID
 		ctx := r.Context()
 		body, err := io.ReadAll(r.Body)
@@ -118,7 +118,7 @@ func JSONHandler(db *postgre.DB) http.HandlerFunc {
 			http.Error(w, "Необходима аутентификация", http.StatusUnauthorized)
 			return
 		}
-		userID := auth.GetUserId(cookie.Value)
+		userID := auth.GetUserID(cookie.Value)
 		st.UserID = userID
 		ctx := req.Context()
 		var buf bytes.Buffer
@@ -202,7 +202,7 @@ func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 			http.Error(w, "Необходима аутентификация", http.StatusUnauthorized)
 			return
 		}
-		userID := auth.GetUserId(cookie.Value)
+		userID := auth.GetUserID(cookie.Value)
 		st.UserID = userID
 		ctx := r.Context()
 		var m []Multi
@@ -325,7 +325,7 @@ func GetUserURLs() http.HandlerFunc {
 		}
 
 		// Извлечь UserID из куки
-		userID := auth.GetUserId(cookie.Value)
+		userID := auth.GetUserID(cookie.Value)
 		if userID == -1 {
 			http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
 			return
@@ -354,7 +354,7 @@ func GetUserURLs() http.HandlerFunc {
 			return
 		}
 		log.Println(userURLs)
-		// Отправка сокращенных URL в формате JSON
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(formatURLs)
 

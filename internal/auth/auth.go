@@ -17,8 +17,8 @@ type Claims struct {
 	UserID int
 }
 
-const TOKEN_EXP = time.Hour * 3
-const SECRET_KEY = "supersecretkey"
+const TokenExp = time.Hour * 3
+const SecretKey = "egfGT&ghB786gLKH$(&*h8ho4O"
 
 // BuildJWTString создаёт токен и возвращает его в виде строки.
 func BuildJWTString(id int) (string, error) {
@@ -26,14 +26,14 @@ func BuildJWTString(id int) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			// когда создан токен
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TOKEN_EXP)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenExp)),
 		},
 		// собственное утверждение
 		UserID: id,
 	})
 
 	// создаём строку токена
-	tokenString, err := token.SignedString([]byte(SECRET_KEY))
+	tokenString, err := token.SignedString([]byte(SecretKey))
 	if err != nil {
 		return "", err
 	}
@@ -41,11 +41,11 @@ func BuildJWTString(id int) (string, error) {
 	// возвращаем строку токена
 	return tokenString, nil
 }
-func GetUserId(tokenString string) int {
+func GetUserID(tokenString string) int {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims,
 		func(t *jwt.Token) (interface{}, error) {
-			return []byte(SECRET_KEY), nil
+			return []byte(SecretKey), nil
 		})
 	if err != nil {
 		return -1
@@ -62,7 +62,7 @@ func GetUserId(tokenString string) int {
 
 func GenerateRandomID() (int, error) {
 	// Генерируем случайное байтовое значение
-	randomBytes := make([]byte, len(SECRET_KEY))
+	randomBytes := make([]byte, len(SecretKey))
 	_, err := rand.Read(randomBytes)
 	if err != nil {
 		return 0, err
@@ -94,14 +94,14 @@ func AuthMiddleWare(h http.HandlerFunc) http.HandlerFunc {
 			http.SetCookie(w, &http.Cookie{
 				Name:     "jwt",
 				Value:    tokenString,
-				Expires:  time.Now().Add(TOKEN_EXP),
+				Expires:  time.Now().Add(TokenExp),
 				HttpOnly: true,
 			})
 			// Вызов обернутого обработчика с токеном в куке
 			h(w, r)
 		} else {
 			// Если кука существует, попытка извлечь ID пользователя из токена
-			userID := GetUserId(cookie.Value)
+			userID := GetUserID(cookie.Value)
 			if userID == -1 {
 				http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
 				return
