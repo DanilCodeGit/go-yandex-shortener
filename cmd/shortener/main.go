@@ -17,12 +17,12 @@ import (
 
 func main() {
 	cfg.InitConfig()
-
+	ctx := context.Background()
 	conn, err := postgre.NewDataBase(context.Background(), *cfg.FlagDataBaseDSN)
 	if err != nil {
 		log.Fatal("Database connection failed")
 	}
-	err = conn.CreateTable()
+	err = conn.CreateTable(ctx)
 	if err != nil {
 		log.Println(err)
 	}

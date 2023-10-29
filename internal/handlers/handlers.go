@@ -48,7 +48,7 @@ func saveDataToFile(data map[string]string, filePath string) error {
 
 func HandlePost(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
+		ctx := r.Context()
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -73,7 +73,7 @@ func HandlePost(db *postgre.DB) http.HandlerFunc {
 
 		////////////////////// DATABASE
 
-		code, _ := db.SaveShortenedURL(url, shortURL)
+		code, _ := db.SaveShortenedURL(ctx, url, shortURL)
 		if code == pgerrcode.UniqueViolation {
 			log.Println("Запись не произошла")
 			w.WriteHeader(http.StatusConflict)
@@ -106,6 +106,7 @@ func HandlePost(db *postgre.DB) http.HandlerFunc {
 
 func JSONHandler(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
 		var buf bytes.Buffer
 		// читаем тело запроса
 		_, err := buf.ReadFrom(req.Body)
@@ -150,7 +151,7 @@ func JSONHandler(db *postgre.DB) http.HandlerFunc {
 		}
 		////////////////////// DATABASE
 
-		code, _ := db.SaveShortenedURL(url, shortURL)
+		code, _ := db.SaveShortenedURL(ctx, url, shortURL)
 		if code == pgerrcode.UniqueViolation {
 			log.Println("Запись не произошла")
 			w.Header().Set("Content-Type", "application/json")
@@ -182,6 +183,7 @@ type Multi struct {
 
 func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		var m []Multi
 		var buf bytes.Buffer
 
@@ -195,7 +197,6 @@ func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-
 		type ShortenStruct struct {
 			CorrelationID string `json:"correlation_id"`
 			ShortURL      string `json:"short_url"`
@@ -208,7 +209,7 @@ func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 			hash := tools.HashURL(item.OriginalURL)
 			tmp := hash
 			shortURL := "http://localhost:8080" + "/" + hash
-			st.SetURL(tmp, item.OriginalURL)
+			st.SetBatch(tmp, item.OriginalURL)
 
 			shortenData = append(shortenData, ShortenStruct{
 				CorrelationID: item.CorrelationID,
@@ -239,7 +240,7 @@ func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 		////////////////////// DATABASE
 
 		for shortURL, originalURL := range newData {
-			code, _ := db.SaveShortenedURL(originalURL, shortURL)
+			code, _ := db.SaveBatch(ctx, originalURL, shortURL)
 			if code == pgerrcode.UniqueViolation {
 				log.Println("Запись не произошла")
 				w.WriteHeader(http.StatusConflict)
@@ -278,13 +279,14 @@ func HandleGet() http.HandlerFunc {
 
 func HandlePing(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		defer r.Body.Close()
 		_, err := postgre.NewDataBase(context.Background(), *cfg.FlagDataBaseDSN)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Fatalf("Хэндлер не может подключиться к бд")
 		}
-		db.Close()
+		db.Close(ctx)
 		w.Header().Set("Location", "Success")
 		w.WriteHeader(http.StatusOK)
 	}
