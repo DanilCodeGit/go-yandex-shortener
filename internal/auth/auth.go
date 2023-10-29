@@ -73,7 +73,7 @@ func GenerateRandomID() (int, error) {
 	return id, nil
 }
 
-func AuthMiddleWare(h http.HandlerFunc) http.HandlerFunc {
+func MiddleWareAuth(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Попытка получить куку JWT
 		cookie, err := r.Cookie("jwt")

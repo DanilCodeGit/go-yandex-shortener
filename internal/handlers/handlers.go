@@ -51,10 +51,12 @@ func HandlePost(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("jwt")
 		if err != nil || cookie.Value == "" {
-			log.Fatal("Траблы с куки", err)
+			//log.Fatal("Траблы с куки", err)
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		userID := auth.GetUserID(cookie.Value)
+		log.Println("userID: ", userID)
 		st.UserID = userID
 		ctx := r.Context()
 		body, err := io.ReadAll(r.Body)
@@ -313,7 +315,7 @@ func HandlePing(db *postgre.DB) http.HandlerFunc {
 	}
 }
 
-var userURLs = map[int][]*storage.Storage{}
+var userURLs = map[int][]storage.Storage{}
 
 func GetUserURLs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -330,7 +332,7 @@ func GetUserURLs() http.HandlerFunc {
 			http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
 			return
 		}
-		userStorage := &storage.Storage{
+		userStorage := storage.Storage{
 			URLsStore: st.URLsStore,
 			UserID:    userID, // Присвойте здесь идентификатор пользователя.
 		}
@@ -353,7 +355,7 @@ func GetUserURLs() http.HandlerFunc {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		log.Println(userURLs)
+		log.Println("usersURLs: ", userURLs)
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(formatURLs)

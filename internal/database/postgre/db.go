@@ -62,8 +62,6 @@ func (db *DB) SaveShortenedURL(ctx context.Context, originalURL, shortURL string
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
-			fmt.Println(pgErr.Message)
-			fmt.Println(pgErr.Code)
 			return pgErr.Code, nil
 		}
 	}

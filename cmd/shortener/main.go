@@ -29,12 +29,12 @@ func main() {
 	}
 
 	r := chi.NewRouter()
-	GetPing := logger.WithLogging(auth.AuthMiddleWare(gzipMiddleware(handlers.HandlePing(conn))))
-	Get := logger.WithLogging(auth.AuthMiddleWare(gzipMiddleware(handlers.HandleGet())))
-	Post := logger.WithLogging(auth.AuthMiddleWare(gzipMiddleware(handlers.HandlePost(conn))))
-	JSONHandler := logger.WithLogging(auth.AuthMiddleWare(gzipMiddleware(handlers.JSONHandler(conn))))
-	MultipleRequestHandler := logger.WithLogging(auth.AuthMiddleWare(gzipMiddleware(handlers.MultipleRequestHandler(conn))))
-	GetUserURLs := logger.WithLogging(auth.AuthMiddleWare(handlers.GetUserURLs()))
+	GetPing := logger.WithLogging(auth.MiddleWareAuth(gzipMiddleware(handlers.HandlePing(conn))))
+	Get := logger.WithLogging(auth.MiddleWareAuth(gzipMiddleware(handlers.HandleGet())))
+	Post := logger.WithLogging(auth.MiddleWareAuth(gzipMiddleware(handlers.HandlePost(conn))))
+	JSONHandler := logger.WithLogging(auth.MiddleWareAuth(gzipMiddleware(handlers.JSONHandler(conn))))
+	MultipleRequestHandler := logger.WithLogging(auth.MiddleWareAuth(gzipMiddleware(handlers.MultipleRequestHandler(conn))))
+	GetUserURLs := logger.WithLogging(auth.MiddleWareAuth(handlers.GetUserURLs()))
 	r.Get("/api/user/urls", GetUserURLs.ServeHTTP)
 	r.Get("/ping", GetPing.ServeHTTP)
 	r.Get("/{id}", Get.ServeHTTP)
