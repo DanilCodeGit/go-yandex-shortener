@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/cmd/shortener/gzip"
+	"github.com/DanilCodeGit/go-yandex-shortener/internal/auth"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/database/postgre"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/handlers"
@@ -28,17 +29,17 @@ func main() {
 	}
 
 	r := chi.NewRouter()
-	//loggerGetPing := logger.WithLogging(gzipMiddleware(handlers.HandlePing(conn)))
-	//loggerGet := logger.WithLogging(gzipMiddleware(handlers.HandleGet()))
-	//loggerPost := logger.WithLogging(gzipMiddleware(handlers.HandlePost(conn)))
-	//loggerJSONHandler := logger.WithLogging(gzipMiddleware(handlers.JSONHandler(conn)))
-	//loggerMultipleRequestHandler := logger.WithLogging(gzipMiddleware(handlers.MultipleRequestHandler(conn)))
-	GetPing := logger.WithLogging(gzipMiddleware(handlers.HandlePing(conn)))
-	Get := logger.WithLogging(gzipMiddleware((handlers.HandleGet())))
-	Post := logger.WithLogging(gzipMiddleware(handlers.HandlePost(conn)))
-	JSONHandler := logger.WithLogging(gzipMiddleware(handlers.JSONHandler(conn)))
-	MultipleRequestHandler := logger.WithLogging(gzipMiddleware(handlers.MultipleRequestHandler(conn)))
-	gd := logger.WithLogging(gzipMiddleware(handlers.GetUserURLs(conn)))
+	//GetPing := logger.WithLogging(gzipMiddleware(handlers.HandlePing(conn)))
+	//Get := logger.WithLogging(gzipMiddleware(handlers.HandleGet()))
+	//Post := logger.WithLogging(gzipMiddleware(handlers.HandlePost(conn)))
+	//JSONHandler := logger.WithLogging(gzipMiddleware(handlers.JSONHandler(conn)))
+	//MultipleRequestHandler := logger.WithLogging(gzipMiddleware(handlers.MultipleRequestHandler(conn)))
+	GetPing := logger.WithLogging(auth.AuthMiddleWare(gzipMiddleware(handlers.HandlePing(conn))))
+	Get := logger.WithLogging(auth.AuthMiddleWare(gzipMiddleware(handlers.HandleGet())))
+	Post := logger.WithLogging(auth.AuthMiddleWare(gzipMiddleware(handlers.HandlePost(conn))))
+	JSONHandler := logger.WithLogging(auth.AuthMiddleWare(gzipMiddleware(handlers.JSONHandler(conn))))
+	MultipleRequestHandler := logger.WithLogging(auth.AuthMiddleWare(gzipMiddleware(handlers.MultipleRequestHandler(conn))))
+	gd := logger.WithLogging(auth.AuthMiddleWare(gzipMiddleware(handlers.GetUserURLs(conn))))
 	r.Get("/api/user/urls", gd.ServeHTTP)
 	r.Get("/ping", GetPing.ServeHTTP)
 	r.Get("/{id}", Get.ServeHTTP)

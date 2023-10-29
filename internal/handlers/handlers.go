@@ -291,6 +291,7 @@ func HandlePing(db *postgre.DB) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 	}
 }
+
 func GetUserURLs(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
