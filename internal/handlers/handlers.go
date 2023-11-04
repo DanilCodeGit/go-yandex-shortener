@@ -50,16 +50,6 @@ func saveDataToFile(data map[string]string, filePath string) error {
 func HandlePost(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		//cookie, err := r.Cookie("jwt")
-		//if err != nil || cookie.Value == "" {
-		//	w.WriteHeader(http.StatusUnauthorized)
-		//	return
-		//}
-		//log.Println("Cookie from handler:", cookie.Value)
-		//userID := auth.GetUserID(cookie.Value)
-		//log.Println("userID: ", userID)
-		//st.UserID = userID
-
 		ctx := r.Context()
 
 		body, err := io.ReadAll(r.Body)
@@ -282,14 +272,21 @@ func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 	}
 }
 
-func HandleGet() http.HandlerFunc {
+func HandleGet(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		originalURL, ok := st.GetURL(id)
 		if !ok {
 			log.Fatal(originalURL)
 		}
-
+		flag, err := db.GetFlagShortURL(id)
+		if err != nil {
+			log.Println("Ошибка получения shortURL из запроса к бд")
+		}
+		if flag == true {
+			w.WriteHeader(http.StatusGone)
+			return
+		}
 		fmt.Println("orig: ", originalURL)
 		fmt.Println("st: ", st.URLsStore)
 		w.Header().Set("Location", originalURL)
@@ -299,14 +296,13 @@ func HandleGet() http.HandlerFunc {
 
 func HandlePing(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
 		defer r.Body.Close()
 		_, err := postgre.NewDataBase(context.Background(), *cfg.FlagDataBaseDSN)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Fatalf("Хэндлер не может подключиться к бд")
 		}
-		db.Close(ctx)
+		db.Close()
 		w.Header().Set("Location", "Success")
 		w.WriteHeader(http.StatusOK)
 	}
@@ -358,5 +354,66 @@ func GetUserURLs() http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(formatURLs)
 
+	}
+}
+
+func DeleteHandlers(db *postgre.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// TODO: Принять в теле запроса список идентификаторов сокращенных URL для удаления
+		// TODO: Если успешно - code 202
+		// TODO: При запросе удалённого URL с помощью хендлера GET /{id} нужно вернуть статус 410 Gone
+		// Получить куку JWT из запроса
+		cookie, err := r.Cookie("jwt")
+		if err != nil || cookie.Value == "" {
+			http.Error(w, "Необходима аутентификация", http.StatusNoContent)
+			return
+		}
+
+		// Извлечь UserID из куки
+		userID := auth.GetUserID(cookie.Value)
+		if userID == -1 {
+			http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
+			return
+		}
+		//ctx := r.Context()
+		// Получить куку JWT из запроса
+		cookie, err = r.Cookie("jwt")
+		if err != nil || cookie.Value == "" {
+			http.Error(w, "Необходима аутентификация", http.StatusNoContent)
+			return
+		}
+
+		// Извлечь UserID из куки
+		userID = auth.GetUserID(cookie.Value)
+		if userID == -1 {
+			http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
+			return
+		}
+
+		// Читаем тело запроса
+		var urlsToDelete []string
+		err = json.NewDecoder(r.Body).Decode(&urlsToDelete)
+		if err != nil {
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+			return
+		}
+
+		// Создайте канал для асинхронного выполнения удаления URL
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+
+			// В цикле обновите флаги удаления для указанных URL в базе данных
+			for _, urlID := range urlsToDelete {
+				err := db.MarkURLAsDeleted(urlID)
+				if err != nil {
+					// Обработка ошибок при удалении
+					log.Printf("Failed to mark URL %s as deleted: %v", urlID, err)
+				}
+			}
+		}()
+
+		// Верните HTTP-статус 202 Accepted, чтобы сообщить о приёме запроса
+		w.WriteHeader(http.StatusAccepted)
 	}
 }

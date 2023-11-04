@@ -2,6 +2,7 @@ package postgre
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -40,7 +41,8 @@ func NewDataBase(ctx context.Context, dsn string) (*DB, error) {
 func (db *DB) CreateTable(ctx context.Context) error {
 	createTable := `CREATE TABLE  short_urls (
 	  	original_url varchar(255) NOT NULL constraint original_url_key unique ,
-	  	short_url VARCHAR(255) NOT NULL
+	  	short_url VARCHAR(255) NOT NULL,
+	  	is_deleted bool not null default false
 
 )`
 	_, err := db.Conn.Exec(ctx, createTable)
@@ -69,7 +71,7 @@ func (db *DB) SaveShortenedURL(ctx context.Context, originalURL, shortURL string
 	return "", err
 }
 
-func (db *DB) Close(ctx context.Context) {
+func (db *DB) Close() {
 	defer db.Conn.Close()
 }
 
@@ -90,4 +92,26 @@ func (db *DB) SaveBatch(ctx context.Context, originalURL, shortURL string) (stri
 	}
 
 	return "", err
+}
+
+func (db *DB) MarkURLAsDeleted(shortURL string) error {
+	query := "UPDATE short_urls SET is_deleted = true WHERE short_url = $1"
+	_, err := db.Conn.Exec(context.TODO(), query, shortURL)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *DB) GetFlagShortURL(shortUrl string) (bool, error) {
+	query := `select is_deleted from short_urls where short_url = $1`
+	var deletedFlag bool
+	row := db.Conn.QueryRow(context.TODO(), query, shortUrl)
+	if err := row.Scan(&deletedFlag); err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil // No rows found, return false and no error
+		}
+		return false, err // Error occurred while scanning the row
+	}
+	return deletedFlag, nil
 }
