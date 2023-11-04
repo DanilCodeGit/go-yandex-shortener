@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/DanilCodeGit/go-yandex-shortener/internal/auth"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/database/postgre"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/storage"
@@ -48,7 +49,19 @@ func saveDataToFile(data map[string]string, filePath string) error {
 
 func HandlePost(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		//cookie, err := r.Cookie("jwt")
+		//if err != nil || cookie.Value == "" {
+		//	w.WriteHeader(http.StatusUnauthorized)
+		//	return
+		//}
+		//log.Println("Cookie from handler:", cookie.Value)
+		//userID := auth.GetUserID(cookie.Value)
+		//log.Println("userID: ", userID)
+		//st.UserID = userID
+
 		ctx := r.Context()
+
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -70,7 +83,6 @@ func HandlePost(db *postgre.DB) http.HandlerFunc {
 		for shortURL, originalURL := range st.URLsStore {
 			jsonData[shortURL] = originalURL
 		}
-
 		////////////////////// DATABASE
 
 		code, _ := db.SaveShortenedURL(ctx, url, shortURL)
@@ -106,6 +118,13 @@ func HandlePost(db *postgre.DB) http.HandlerFunc {
 
 func JSONHandler(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		//cookie, err := req.Cookie("jwt")
+		//if err != nil || cookie.Value == "" {
+		//	http.Error(w, "Необходима аутентификация", http.StatusUnauthorized)
+		//	return
+		//}
+		//userID := auth.GetUserID(cookie.Value)
+		//st.UserID = userID
 		ctx := req.Context()
 		var buf bytes.Buffer
 		// читаем тело запроса
@@ -183,6 +202,13 @@ type Multi struct {
 
 func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		//cookie, err := r.Cookie("jwt")
+		//if err != nil || cookie.Value == "" {
+		//	http.Error(w, "Необходима аутентификация", http.StatusUnauthorized)
+		//	return
+		//}
+		//userID := auth.GetUserID(cookie.Value)
+		//st.UserID = userID
 		ctx := r.Context()
 		var m []Multi
 		var buf bytes.Buffer
@@ -289,5 +315,54 @@ func HandlePing(db *postgre.DB) http.HandlerFunc {
 		db.Close(ctx)
 		w.Header().Set("Location", "Success")
 		w.WriteHeader(http.StatusOK)
+	}
+}
+
+var userURLs = map[int][]storage.Storage{}
+
+func GetUserURLs() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Получить куку JWT из запроса
+		cookie, err := r.Cookie("jwt")
+		if err != nil || cookie.Value == "" {
+			http.Error(w, "Необходима аутентификация", http.StatusNoContent)
+			return
+		}
+
+		// Извлечь UserID из куки
+		userID := auth.GetUserID(cookie.Value)
+		if userID == -1 {
+			http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
+			return
+		}
+		userStorage := storage.Storage{
+			URLsStore: st.URLsStore,
+			UserID:    userID, // Присвойте здесь идентификатор пользователя.
+		}
+		userURLs[userID] = append(userURLs[userID], userStorage)
+		// Поиск сокращенных URL для данного пользователя
+		urls, exists := userURLs[userID]
+		if !exists || len(urls) == 0 {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		var formatURLs []URLData
+		for _, userStorage := range urls {
+			for shortURL, originalURL := range userStorage.URLsStore {
+				formatURLs = append(formatURLs, URLData{
+					ShortURL:    "http://localhost:8080/" + shortURL,
+					OriginalURL: originalURL,
+				})
+			}
+			break
+		}
+		//if len(formatURLs) == 0 {
+		//	w.WriteHeader(http.StatusNoContent)
+		//}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(formatURLs)
+
 	}
 }

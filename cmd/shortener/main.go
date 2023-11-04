@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/cmd/shortener/gzip"
+	"github.com/DanilCodeGit/go-yandex-shortener/internal/auth"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/database/postgre"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/handlers"
@@ -24,20 +25,22 @@ func main() {
 	}
 	err = conn.CreateTable(ctx)
 	if err != nil {
-		log.Println(err)
+		log.Println("Таблица уже создана")
 	}
 
 	r := chi.NewRouter()
-	loggerGetPing := logger.WithLogging(gzipMiddleware(handlers.HandlePing(conn)))
-	loggerGet := logger.WithLogging(gzipMiddleware(handlers.HandleGet()))
-	loggerPost := logger.WithLogging(gzipMiddleware(handlers.HandlePost(conn)))
-	loggerJSONHandler := logger.WithLogging(gzipMiddleware(handlers.JSONHandler(conn)))
-	loggerMultipleRequestHandler := logger.WithLogging(gzipMiddleware(handlers.MultipleRequestHandler(conn)))
-	r.Get("/ping", loggerGetPing.ServeHTTP)
-	r.Get("/{id}", loggerGet.ServeHTTP)
-	r.Post("/", loggerPost.ServeHTTP)
-	r.Post("/api/shorten", loggerJSONHandler.ServeHTTP)
-	r.Post("/api/shorten/batch", loggerMultipleRequestHandler.ServeHTTP)
+	GetPing := logger.WithLogging(auth.MiddleWareAuth(gzipMiddleware(handlers.HandlePing(conn))))
+	Get := logger.WithLogging(auth.MiddleWareAuth(gzipMiddleware(handlers.HandleGet())))
+	Post := logger.WithLogging(auth.MiddleWareAuth(gzipMiddleware(handlers.HandlePost(conn))))
+	JSONHandler := logger.WithLogging(auth.MiddleWareAuth(gzipMiddleware(handlers.JSONHandler(conn))))
+	MultipleRequestHandler := logger.WithLogging(auth.MiddleWareAuth(gzipMiddleware(handlers.MultipleRequestHandler(conn))))
+	GetUserURLs := logger.WithLogging(auth.MiddleWareAuth(handlers.GetUserURLs()))
+	r.Get("/api/user/urls", GetUserURLs.ServeHTTP)
+	r.Get("/ping", GetPing.ServeHTTP)
+	r.Get("/{id}", Get.ServeHTTP)
+	r.Post("/", Post.ServeHTTP)
+	r.Post("/api/shorten", JSONHandler.ServeHTTP)
+	r.Post("/api/shorten/batch", MultipleRequestHandler.ServeHTTP)
 
 	err = http.ListenAndServe(*cfg.FlagServerAddress, r)
 	if err != nil {
