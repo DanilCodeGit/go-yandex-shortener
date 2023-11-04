@@ -71,7 +71,7 @@ func (db *DB) SaveShortenedURL(ctx context.Context, originalURL, shortURL string
 	return "", err
 }
 
-func (db *DB) Close() {
+func (db *DB) Close(ctx context.Context) {
 	defer db.Conn.Close()
 }
 

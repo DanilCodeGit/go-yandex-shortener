@@ -297,12 +297,13 @@ func HandleGet(db *postgre.DB) http.HandlerFunc {
 func HandlePing(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
+		ctx := r.Context()
 		_, err := postgre.NewDataBase(context.Background(), *cfg.FlagDataBaseDSN)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Fatalf("Хэндлер не может подключиться к бд")
 		}
-		db.Close()
+		db.Close(ctx)
 		w.Header().Set("Location", "Success")
 		w.WriteHeader(http.StatusOK)
 	}
@@ -359,9 +360,6 @@ func GetUserURLs() http.HandlerFunc {
 
 func DeleteHandlers(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// TODO: Принять в теле запроса список идентификаторов сокращенных URL для удаления
-		// TODO: Если успешно - code 202
-		// TODO: При запросе удалённого URL с помощью хендлера GET /{id} нужно вернуть статус 410 Gone
 		// Получить куку JWT из запроса
 		cookie, err := r.Cookie("jwt")
 		if err != nil || cookie.Value == "" {
