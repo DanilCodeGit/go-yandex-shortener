@@ -186,13 +186,7 @@ type Multi struct {
 
 func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//cookie, err := r.Cookie("jwt")
-		//if err != nil || cookie.Value == "" {
-		//	http.Error(w, "Необходима аутентификация", http.StatusUnauthorized)
-		//	return
-		//}
-		//userID := auth.GetUserID(cookie.Value)
-		//st.UserID = userID
+
 		ctx := r.Context()
 		var m []Multi
 		var buf bytes.Buffer
@@ -283,7 +277,7 @@ func HandleGet(db *postgre.DB) http.HandlerFunc {
 		if err != nil {
 			log.Println("Ошибка получения shortURL из запроса к бд")
 		}
-		if flag == true {
+		if flag {
 			w.WriteHeader(http.StatusGone)
 			return
 		}
@@ -348,9 +342,6 @@ func GetUserURLs() http.HandlerFunc {
 			}
 			break
 		}
-		//if len(formatURLs) == 0 {
-		//	w.WriteHeader(http.StatusNoContent)
-		//}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(formatURLs)

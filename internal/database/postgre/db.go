@@ -103,10 +103,10 @@ func (db *DB) MarkURLAsDeleted(shortURL string) error {
 	return nil
 }
 
-func (db *DB) GetFlagShortURL(shortUrl string) (bool, error) {
+func (db *DB) GetFlagShortURL(shortURL string) (bool, error) {
 	query := `select is_deleted from short_urls where short_url = $1`
 	var deletedFlag bool
-	row := db.Conn.QueryRow(context.TODO(), query, shortUrl)
+	row := db.Conn.QueryRow(context.TODO(), query, shortURL)
 	if err := row.Scan(&deletedFlag); err != nil {
 		if err == sql.ErrNoRows {
 			return false, nil // No rows found, return false and no error
