@@ -118,13 +118,7 @@ func HandlePost(db *postgre.DB) http.HandlerFunc {
 
 func JSONHandler(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		//cookie, err := req.Cookie("jwt")
-		//if err != nil || cookie.Value == "" {
-		//	http.Error(w, "Необходима аутентификация", http.StatusUnauthorized)
-		//	return
-		//}
-		//userID := auth.GetUserID(cookie.Value)
-		//st.UserID = userID
+
 		ctx := req.Context()
 		var buf bytes.Buffer
 		// читаем тело запроса
