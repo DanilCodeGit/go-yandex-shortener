@@ -75,19 +75,42 @@ func (db *DB) Close(ctx context.Context) {
 	defer db.Conn.Close()
 }
 
-func (db *DB) SaveBatch(ctx context.Context, originalURL, shortURL string) (string, error) {
+//	SaveBatch func (db *DB) SaveBatch(ctx context.Context, originalURL, shortURL string) (string, error) {
+//		db.mu.Lock()
+//		defer db.mu.Unlock()
+//		_, err := db.Conn.Exec(ctx,
+//			`INSERT INTO
+//				short_urls (original_url, short_url)
+//				VALUES
+//				($1, $2)`,
+//			originalURL, shortURL)
+//		if err != nil {
+//			var pgErr *pgconn.PgError
+//			if errors.As(err, &pgErr) {
+//				return pgErr.Code, nil
+//			}
+//		}
+//
+//		return "", err
+//	}
+func (db *DB) SaveBatch(ctx context.Context, batch map[string]string) (string, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	_, err := db.Conn.Exec(ctx,
-		`INSERT INTO 
+	var err error
+	for i, v := range batch {
+		originalURL := v
+		shortURL := i
+		_, err := db.Conn.Exec(ctx,
+			`INSERT INTO 
 			short_urls (original_url, short_url) 
 			VALUES 
 			($1, $2)`,
-		originalURL, shortURL)
-	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			return pgErr.Code, nil
+			originalURL, shortURL)
+		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) {
+				return pgErr.Code, nil
+			}
 		}
 	}
 

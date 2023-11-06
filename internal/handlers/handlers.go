@@ -243,19 +243,30 @@ func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 
 		////////////////////// DATABASE
 
-		for shortURL, originalURL := range newData {
-			code, _ := db.SaveBatch(ctx, originalURL, shortURL)
-			if code == pgerrcode.UniqueViolation {
-				log.Println("Запись не произошла")
-				w.WriteHeader(http.StatusConflict)
-				fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
-				if err != nil {
-					return
-				}
-				fmt.Print(fprintf)
+		//for shortURL, originalURL := range newData {
+		//	code, _ := db.SaveBatch(ctx, originalURL, shortURL)
+		//	if code == pgerrcode.UniqueViolation {
+		//		log.Println("Запись не произошла")
+		//		w.WriteHeader(http.StatusConflict)
+		//		fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
+		//		if err != nil {
+		//			return
+		//		}
+		//		fmt.Print(fprintf)
+		//		return
+		//	}
+		//
+		//}
+		code, _ := db.SaveBatch(ctx, newData)
+		if code == pgerrcode.UniqueViolation {
+			log.Println("Запись не произошла")
+			w.WriteHeader(http.StatusConflict)
+			fprintf, err := fmt.Fprintf(w, string(shortenJSON))
+			if err != nil {
 				return
 			}
-
+			fmt.Print(fprintf)
+			return
 		}
 
 		///////////////////////
