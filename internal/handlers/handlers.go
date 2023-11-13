@@ -242,30 +242,11 @@ func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 		}
 
 		////////////////////// DATABASE
-
-		//for shortURL, originalURL := range newData {
-		//	code, _ := db.SaveBatch(ctx, originalURL, shortURL)
-		//	if code == pgerrcode.UniqueViolation {
-		//		log.Println("Запись не произошла")
-		//		w.WriteHeader(http.StatusConflict)
-		//		fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
-		//		if err != nil {
-		//			return
-		//		}
-		//		fmt.Print(fprintf)
-		//		return
-		//	}
-		//
-		//}
 		code, _ := db.SaveBatch(ctx, newData)
 		if code == pgerrcode.UniqueViolation {
 			log.Println("Запись не произошла")
 			w.WriteHeader(http.StatusConflict)
-			fprintf, err := fmt.Fprintf(w, string(shortenJSON))
-			if err != nil {
-				return
-			}
-			fmt.Print(fprintf)
+			w.Write(shortenJSON)
 			return
 		}
 
@@ -314,7 +295,7 @@ func HandlePing(db *postgre.DB) http.HandlerFunc {
 	}
 }
 
-var userURLs = map[int][]storage.Storage{}
+var userURLs = map[int][]*storage.Storage{}
 
 func GetUserURLs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -333,9 +314,9 @@ func GetUserURLs() http.HandlerFunc {
 		}
 		userStorage := storage.Storage{
 			URLsStore: st.URLsStore,
-			UserID:    userID, // Присвойте здесь идентификатор пользователя.
+			UserID:    userID,
 		}
-		userURLs[userID] = append(userURLs[userID], userStorage)
+		userURLs[userID] = append(userURLs[userID], &userStorage)
 		// Поиск сокращенных URL для данного пользователя
 		urls, exists := userURLs[userID]
 		if !exists || len(urls) == 0 {
@@ -375,7 +356,6 @@ func DeleteHandlers(db *postgre.DB) http.HandlerFunc {
 			http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
 			return
 		}
-		//ctx := r.Context()
 		// Получить куку JWT из запроса
 		cookie, err = r.Cookie("jwt")
 		if err != nil || cookie.Value == "" {
@@ -413,7 +393,6 @@ func DeleteHandlers(db *postgre.DB) http.HandlerFunc {
 			}
 		}()
 
-		// Верните HTTP-статус 202 Accepted, чтобы сообщить о приёме запроса
 		w.WriteHeader(http.StatusAccepted)
 	}
 }

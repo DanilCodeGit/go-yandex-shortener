@@ -17,7 +17,8 @@ type Claims struct {
 	UserID int
 }
 
-const TokenExp = time.Hour * 192
+var TokenExp = time.Now().Add(time.Minute * 30).Unix()
+
 const SecretKey = "supersecretkey"
 
 // BuildJWTString создаёт токен и возвращает его в виде строки.
@@ -26,7 +27,7 @@ func BuildJWTString(id int) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			// когда создан токен
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenExp)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(TokenExp))),
 		},
 		// собственное утверждение
 		UserID: id,
@@ -56,7 +57,6 @@ func GetUserID(tokenString string) int {
 		return -1
 	}
 
-	fmt.Println("Token is valid")
 	return claims.UserID
 }
 
@@ -94,7 +94,7 @@ func MiddleWareAuth(h http.HandlerFunc) http.HandlerFunc {
 			http.SetCookie(w, &http.Cookie{
 				Name:     "jwt",
 				Value:    tokenString,
-				Expires:  time.Now().Add(TokenExp),
+				Expires:  time.Now().Add(time.Duration(TokenExp)),
 				HttpOnly: true,
 			})
 			// Вызов обернутого обработчика с токеном в куке
