@@ -332,7 +332,7 @@ func GetUserURLs() http.HandlerFunc {
 					OriginalURL: originalURL,
 				})
 			}
-			break
+			//break
 		}
 
 		w.Header().Set("Content-Type", "application/json")
