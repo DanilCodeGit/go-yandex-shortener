@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/auth"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
@@ -341,7 +342,63 @@ func GetUserURLs() http.HandlerFunc {
 	}
 }
 
-func DeleteHandlers(db *postgre.DB) http.HandlerFunc {
+//func DeleteHandler(db *postgre.DB) http.HandlerFunc {
+//	return func(w http.ResponseWriter, r *http.Request) {
+//		// Получить куку JWT из запроса
+//		cookie, err := r.Cookie("jwt")
+//		if err != nil || cookie.Value == "" {
+//			http.Error(w, "Необходима аутентификация", http.StatusNoContent)
+//			return
+//		}
+//
+//		// Извлечь UserID из куки
+//		userID := auth.GetUserID(cookie.Value)
+//		if userID == -1 {
+//			http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
+//			return
+//		}
+//		// Получить куку JWT из запроса
+//		cookie, err = r.Cookie("jwt")
+//		if err != nil || cookie.Value == "" {
+//			http.Error(w, "Необходима аутентификация", http.StatusNoContent)
+//			return
+//		}
+//
+//		// Извлечь UserID из куки
+//		userID = auth.GetUserID(cookie.Value)
+//		if userID == -1 {
+//			http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
+//			return
+//		}
+//
+//		// Читаем тело запроса
+//		var urlsToDelete []string
+//		err = json.NewDecoder(r.Body).Decode(&urlsToDelete)
+//		if err != nil {
+//			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+//			return
+//		}
+//
+//		// Создайте канал для асинхронного выполнения удаления URL
+//		done := make(chan struct{})
+//		go func() {
+//			defer close(done)
+//
+//			// В цикле обновите флаги удаления для указанных URL в базе данных
+//			for _, urlID := range urlsToDelete {
+//				err := db.MarkURLAsDeleted(urlID)
+//				if err != nil {
+//					// Обработка ошибок при удалении
+//					log.Printf("Failed to mark URL %s as deleted: %v", urlID, err)
+//				}
+//			}
+//		}()
+//
+//		w.WriteHeader(http.StatusAccepted)
+//	}
+//}
+
+func DeleteHandler(db *postgre.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Получить куку JWT из запроса
 		cookie, err := r.Cookie("jwt")
@@ -378,21 +435,123 @@ func DeleteHandlers(db *postgre.DB) http.HandlerFunc {
 			return
 		}
 
-		// Создайте канал для асинхронного выполнения удаления URL
-		done := make(chan struct{})
-		go func() {
-			defer close(done)
+		// канал для сигнала к выходу из горутины
+		doneCh := make(chan struct{})
+		// при завершении программы закрываем канал doneCh, чтобы все горутины тоже завершились
+		defer close(doneCh)
+		inputCh := generator(doneCh, urlsToDelete)
+		log.Println("InputCh: ", inputCh)
 
-			// В цикле обновите флаги удаления для указанных URL в базе данных
-			for _, urlID := range urlsToDelete {
-				err := db.MarkURLAsDeleted(urlID)
-				if err != nil {
-					// Обработка ошибок при удалении
-					log.Printf("Failed to mark URL %s as deleted: %v", urlID, err)
-				}
-			}
-		}()
+		channels := fanOut(doneCh, inputCh, db)
+		result := fanIn(doneCh, channels...)
+
+		for res := range result {
+			log.Println(res)
+		}
 
 		w.WriteHeader(http.StatusAccepted)
 	}
+}
+
+func generator(doneCh chan struct{}, input []string) chan string {
+	inputCh := make(chan string)
+
+	go func() {
+		defer close(inputCh)
+
+		for _, data := range input {
+			select {
+			case <-doneCh:
+				return
+			case inputCh <- data:
+			}
+		}
+	}()
+
+	return inputCh
+}
+
+// fanOut принимает канал данных, порождает 10 горутин
+func fanOut(doneCh chan struct{}, inputCh chan string, db *postgre.DB) []chan error {
+	// количество горутин add
+	numWorkers := 20
+	// каналы, в которые отправляются результаты
+	channels := make([]chan error, numWorkers)
+
+	for i := 0; i < numWorkers; i++ {
+		// получаем канал из горутины add
+		addResultCh := deleteURLs(doneCh, inputCh, db)
+		// отправляем его в слайс каналов
+		channels[i] = addResultCh
+	}
+
+	// возвращаем слайс каналов
+	return channels
+}
+
+// fanIn объединяет несколько каналов resultChs в один.
+func fanIn(doneCh chan struct{}, resultChs ...chan error) chan error {
+	// конечный выходной канал в который отправляем данные из всех каналов из слайса, назовём его результирующим
+	finalCh := make(chan error)
+
+	// понадобится для ожидания всех горутин
+	var wg sync.WaitGroup
+
+	// перебираем все входящие каналы
+	for _, ch := range resultChs {
+		// в горутину передавать переменную цикла нельзя, поэтому делаем так
+		chClosure := ch
+
+		// инкрементируем счётчик горутин, которые нужно подождать
+		wg.Add(1)
+
+		go func() {
+			// откладываем сообщение о том, что горутина завершилась
+			defer wg.Done()
+
+			// получаем данные из канала
+			for data := range chClosure {
+				select {
+				// выходим из горутины, если канал закрылся
+				case <-doneCh:
+					return
+				// если не закрылся, отправляем данные в конечный выходной канал
+				case finalCh <- data:
+				}
+			}
+		}()
+	}
+
+	go func() {
+		// ждём завершения всех горутин
+		wg.Wait()
+		// когда все горутины завершились, закрываем результирующий канал
+		close(finalCh)
+	}()
+
+	// возвращаем результирующий канал
+	return finalCh
+}
+func deleteURLs(doneCh chan struct{}, inputCh chan string, db *postgre.DB) chan error {
+	addRes := make(chan error)
+
+	go func() {
+		defer close(addRes)
+
+		for data := range inputCh {
+
+			err := db.MarkURLAsDeleted(data)
+			if err != nil {
+				// Обработка ошибок при удалении
+				log.Printf("Failed to mark URL %s as deleted: %v", data, err)
+			}
+
+			select {
+			case <-doneCh:
+				return
+			case addRes <- err:
+			}
+		}
+	}()
+	return addRes
 }

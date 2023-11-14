@@ -34,7 +34,7 @@ func main() {
 	Post := auth.MiddleWareAuth(gzipMiddleware(handlers.HandlePost(conn)))
 	JSONHandler := auth.MiddleWareAuth(gzipMiddleware(handlers.JSONHandler(conn)))
 	MultipleRequestHandler := auth.MiddleWareAuth(gzipMiddleware(handlers.MultipleRequestHandler(conn)))
-	DeleteShortURLs := auth.MiddleWareAuth(gzipMiddleware(handlers.DeleteHandlers(conn)))
+	DeleteShortURLs := auth.MiddleWareAuth(gzipMiddleware(handlers.DeleteHandler(conn)))
 	GetUserURLs := auth.MiddleWareAuth(handlers.GetUserURLs())
 	r.Use(logger.WithLogging)
 	r.Delete("/api/user/urls", DeleteShortURLs)
