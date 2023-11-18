@@ -23,18 +23,20 @@ func main() {
 	if err != nil {
 		log.Fatal("Database connection failed")
 	}
+
+	dbHandle := handlers.DataBaseHandle{DB: conn}
 	err = conn.CreateTable(ctx)
 	if err != nil {
 		log.Println("Таблица уже создана")
 	}
 
 	r := chi.NewRouter()
-	GetPing := auth.MiddleWareAuth(gzipMiddleware(handlers.HandlePing(conn)))
-	Get := auth.MiddleWareAuth(gzipMiddleware(handlers.HandleGet(conn)))
-	Post := auth.MiddleWareAuth(gzipMiddleware(handlers.HandlePost(conn)))
-	JSONHandler := auth.MiddleWareAuth(gzipMiddleware(handlers.JSONHandler(conn)))
-	MultipleRequestHandler := auth.MiddleWareAuth(gzipMiddleware(handlers.MultipleRequestHandler(conn)))
-	DeleteShortURLs := auth.MiddleWareAuth(gzipMiddleware(handlers.DeleteHandler(conn)))
+	GetPing := auth.MiddleWareAuth(gzipMiddleware(dbHandle.HandlePing()))
+	Get := auth.MiddleWareAuth(gzipMiddleware(dbHandle.HandleGet()))
+	Post := auth.MiddleWareAuth(gzipMiddleware(dbHandle.HandlePost()))
+	JSONHandler := auth.MiddleWareAuth(gzipMiddleware(dbHandle.JSONHandler()))
+	MultipleRequestHandler := auth.MiddleWareAuth(gzipMiddleware(dbHandle.MultipleRequestHandler()))
+	DeleteShortURLs := auth.MiddleWareAuth(gzipMiddleware(dbHandle.DeleteHandler()))
 	GetUserURLs := auth.MiddleWareAuth(handlers.GetUserURLs())
 	r.Use(logger.WithLogging)
 	r.Delete("/api/user/urls", DeleteShortURLs)

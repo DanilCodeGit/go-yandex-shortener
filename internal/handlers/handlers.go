@@ -22,7 +22,7 @@ import (
 
 var st = *storage.NewStorage()
 
-type DataBase struct {
+type DataBaseHandle struct {
 	DB *postgre.DB
 }
 type URLData struct {
@@ -51,7 +51,7 @@ func saveDataToFile(data map[string]string, filePath string) error {
 	return nil
 }
 
-func (db *DataBase) HandlePost() http.HandlerFunc {
+func (db *DataBaseHandle) HandlePost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -110,7 +110,7 @@ func (db *DataBase) HandlePost() http.HandlerFunc {
 	}
 }
 
-func (db *DataBase) JSONHandler() http.HandlerFunc {
+func (db *DataBaseHandle) JSONHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 
 		ctx := req.Context()
@@ -188,7 +188,7 @@ type Multi struct {
 	OriginalURL   string `json:"original_url"`
 }
 
-func (db *DataBase) MultipleRequestHandler() http.HandlerFunc {
+func (db *DataBaseHandle) MultipleRequestHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -262,7 +262,7 @@ func (db *DataBase) MultipleRequestHandler() http.HandlerFunc {
 	}
 }
 
-func (db *DataBase) HandleGet() http.HandlerFunc {
+func (db *DataBaseHandle) HandleGet() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		originalURL, ok := st.GetURL(id)
@@ -284,7 +284,7 @@ func (db *DataBase) HandleGet() http.HandlerFunc {
 	}
 }
 
-func (db *DataBase) HandlePing() http.HandlerFunc {
+func (db *DataBaseHandle) HandlePing() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := r.Context()
@@ -345,7 +345,7 @@ func GetUserURLs() http.HandlerFunc {
 	}
 }
 
-func (db *DataBase) DeleteHandler() http.HandlerFunc {
+func (db *DataBaseHandle) DeleteHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Получить куку JWT из запроса
 		cookie, err := r.Cookie("jwt")
