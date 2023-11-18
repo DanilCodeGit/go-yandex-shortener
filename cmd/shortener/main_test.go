@@ -19,11 +19,11 @@ func TestHandleGet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	dbHandle := handlers.DataBaseHandle{DB: conn}
 	// Создаем записыватель ответа для захвата ответа.
 	rr := httptest.NewRecorder()
 	// Вызываем хэндлер.
-	handlers.HandleGet(conn).ServeHTTP(rr, req)
+	dbHandle.HandleGet().ServeHTTP(rr, req)
 	assert.Equal(t, rr.Code, http.StatusTemporaryRedirect)
 
 	// Добавляем другие проверки по мере необходимости.
