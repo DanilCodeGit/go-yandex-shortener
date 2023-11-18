@@ -272,6 +272,7 @@ func (db *DataBaseHandle) HandleGet() http.HandlerFunc {
 		flag, err := db.DB.GetFlagShortURL(id)
 		if err != nil {
 			log.Println("Ошибка получения shortURL из запроса к бд")
+			return
 		}
 		if flag {
 			w.WriteHeader(http.StatusGone)
@@ -299,10 +300,9 @@ func (db *DataBaseHandle) HandlePing() http.HandlerFunc {
 	}
 }
 
-var userURLs = map[int][]*storage.Storage{}
-
 func GetUserURLs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var userURLs = map[int][]*storage.Storage{}
 		// Получить куку JWT из запроса
 		cookie, err := r.Cookie("jwt")
 		if err != nil || cookie.Value == "" {
