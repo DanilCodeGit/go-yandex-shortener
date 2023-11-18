@@ -22,6 +22,9 @@ import (
 
 var st = *storage.NewStorage()
 
+type DataBase struct {
+	DB *postgre.DB
+}
 type URLData struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
@@ -48,7 +51,7 @@ func saveDataToFile(data map[string]string, filePath string) error {
 	return nil
 }
 
-func HandlePost(db *postgre.DB) http.HandlerFunc {
+func (db *DataBase) HandlePost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -76,7 +79,7 @@ func HandlePost(db *postgre.DB) http.HandlerFunc {
 		}
 		////////////////////// DATABASE
 
-		code, _ := db.SaveShortenedURL(ctx, url, shortURL)
+		code, _ := db.DB.SaveShortenedURL(ctx, url, shortURL)
 		if code == pgerrcode.UniqueViolation {
 			log.Println("Запись не произошла")
 			w.WriteHeader(http.StatusConflict)
@@ -107,7 +110,7 @@ func HandlePost(db *postgre.DB) http.HandlerFunc {
 	}
 }
 
-func JSONHandler(db *postgre.DB) http.HandlerFunc {
+func (db *DataBase) JSONHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 
 		ctx := req.Context()
@@ -155,7 +158,7 @@ func JSONHandler(db *postgre.DB) http.HandlerFunc {
 		}
 		////////////////////// DATABASE
 
-		code, _ := db.SaveShortenedURL(ctx, url, shortURL)
+		code, _ := db.DB.SaveShortenedURL(ctx, url, shortURL)
 		if code == pgerrcode.UniqueViolation {
 			log.Println("Запись не произошла")
 			w.Header().Set("Content-Type", "application/json")
@@ -185,7 +188,7 @@ type Multi struct {
 	OriginalURL   string `json:"original_url"`
 }
 
-func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
+func (db *DataBase) MultipleRequestHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -243,7 +246,7 @@ func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 		}
 
 		////////////////////// DATABASE
-		code, _ := db.SaveBatch(ctx, newData)
+		code, _ := db.DB.SaveBatch(ctx, newData)
 		if code == pgerrcode.UniqueViolation {
 			log.Println("Запись не произошла")
 			w.WriteHeader(http.StatusConflict)
@@ -259,14 +262,14 @@ func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 	}
 }
 
-func HandleGet(db *postgre.DB) http.HandlerFunc {
+func (db *DataBase) HandleGet() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		originalURL, ok := st.GetURL(id)
 		if !ok {
 			log.Fatal(originalURL)
 		}
-		flag, err := db.GetFlagShortURL(id)
+		flag, err := db.DB.GetFlagShortURL(id)
 		if err != nil {
 			log.Println("Ошибка получения shortURL из запроса к бд")
 		}
@@ -281,7 +284,7 @@ func HandleGet(db *postgre.DB) http.HandlerFunc {
 	}
 }
 
-func HandlePing(db *postgre.DB) http.HandlerFunc {
+func (db *DataBase) HandlePing() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := r.Context()
@@ -290,7 +293,7 @@ func HandlePing(db *postgre.DB) http.HandlerFunc {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Fatalf("Хэндлер не может подключиться к бд")
 		}
-		db.Close(ctx)
+		db.DB.Close(ctx)
 		w.Header().Set("Location", "Success")
 		w.WriteHeader(http.StatusOK)
 	}
@@ -342,63 +345,7 @@ func GetUserURLs() http.HandlerFunc {
 	}
 }
 
-//func DeleteHandler(db *postgre.DB) http.HandlerFunc {
-//	return func(w http.ResponseWriter, r *http.Request) {
-//		// Получить куку JWT из запроса
-//		cookie, err := r.Cookie("jwt")
-//		if err != nil || cookie.Value == "" {
-//			http.Error(w, "Необходима аутентификация", http.StatusNoContent)
-//			return
-//		}
-//
-//		// Извлечь UserID из куки
-//		userID := auth.GetUserID(cookie.Value)
-//		if userID == -1 {
-//			http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
-//			return
-//		}
-//		// Получить куку JWT из запроса
-//		cookie, err = r.Cookie("jwt")
-//		if err != nil || cookie.Value == "" {
-//			http.Error(w, "Необходима аутентификация", http.StatusNoContent)
-//			return
-//		}
-//
-//		// Извлечь UserID из куки
-//		userID = auth.GetUserID(cookie.Value)
-//		if userID == -1 {
-//			http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
-//			return
-//		}
-//
-//		// Читаем тело запроса
-//		var urlsToDelete []string
-//		err = json.NewDecoder(r.Body).Decode(&urlsToDelete)
-//		if err != nil {
-//			http.Error(w, "Invalid JSON", http.StatusBadRequest)
-//			return
-//		}
-//
-//		// Создайте канал для асинхронного выполнения удаления URL
-//		done := make(chan struct{})
-//		go func() {
-//			defer close(done)
-//
-//			// В цикле обновите флаги удаления для указанных URL в базе данных
-//			for _, urlID := range urlsToDelete {
-//				err := db.MarkURLAsDeleted(urlID)
-//				if err != nil {
-//					// Обработка ошибок при удалении
-//					log.Printf("Failed to mark URL %s as deleted: %v", urlID, err)
-//				}
-//			}
-//		}()
-//
-//		w.WriteHeader(http.StatusAccepted)
-//	}
-//}
-
-func DeleteHandler(db *postgre.DB) http.HandlerFunc {
+func (db *DataBase) DeleteHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Получить куку JWT из запроса
 		cookie, err := r.Cookie("jwt")
@@ -442,7 +389,7 @@ func DeleteHandler(db *postgre.DB) http.HandlerFunc {
 		inputCh := generator(doneCh, urlsToDelete)
 		log.Println("InputCh: ", inputCh)
 
-		channels := fanOut(doneCh, inputCh, db)
+		channels := fanOut(doneCh, inputCh, db.DB)
 		result := fanIn(doneCh, channels...)
 
 		for res := range result {
