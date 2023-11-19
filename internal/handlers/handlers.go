@@ -272,7 +272,7 @@ func (db *DataBaseHandle) HandleGet() http.HandlerFunc {
 		flag, err := db.DB.GetFlagShortURL(id)
 		if err != nil {
 			log.Println("Ошибка получения shortURL из запроса к бд")
-			return
+			//return
 		}
 		if flag {
 			w.WriteHeader(http.StatusGone)
@@ -300,8 +300,6 @@ func (db *DataBaseHandle) HandlePing() http.HandlerFunc {
 	}
 }
 
-var userURLs = map[int][]*storage.Storage{}
-
 func GetUserURLs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -311,16 +309,17 @@ func GetUserURLs() http.HandlerFunc {
 			http.Error(w, "Необходима аутентификация", http.StatusNoContent)
 			return
 		}
-
 		// Извлечь UserID из куки
 		userID := auth.GetUserID(cookie.Value)
 		if userID == -1 {
 			http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
 			return
 		}
-		userStorage := storage.Storage{
-			URLsStore: st.URLsStore,
-			User:      storage.User{UserID: userID},
+		userURLs := map[int][]*storage.UserStorage{}
+
+		userStorage := storage.UserStorage{
+			UserID:  userID,
+			Storage: storage.Storage{URLsStore: st.URLsStore},
 		}
 		userURLs[userID] = append(userURLs[userID], &userStorage)
 		// Поиск сокращенных URL для данного пользователя

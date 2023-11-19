@@ -9,8 +9,13 @@ type ST interface {
 }
 type Storage struct {
 	URLsStore map[string]string
-	User
+	//UserID    int
 	mu sync.RWMutex
+}
+
+type UserStorage struct {
+	UserID int
+	Storage
 }
 
 type User struct {
