@@ -348,36 +348,36 @@ func GetUserURLs() http.HandlerFunc {
 
 func (db *DataBaseHandle) DeleteHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Получить куку JWT из запроса
-		cookie, err := r.Cookie("jwt")
-		if err != nil || cookie.Value == "" {
-			http.Error(w, "Необходима аутентификация", http.StatusNoContent)
-			return
-		}
-
-		// Извлечь UserID из куки
-		userID := auth.GetUserID(cookie.Value)
-		if userID == -1 {
-			http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
-			return
-		}
-		// Получить куку JWT из запроса
-		cookie, err = r.Cookie("jwt")
-		if err != nil || cookie.Value == "" {
-			http.Error(w, "Необходима аутентификация", http.StatusNoContent)
-			return
-		}
-
-		// Извлечь UserID из куки
-		userID = auth.GetUserID(cookie.Value)
-		if userID == -1 {
-			http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
-			return
-		}
+		//// Получить куку JWT из запроса
+		//cookie, err := r.Cookie("jwt")
+		//if err != nil || cookie.Value == "" {
+		//	http.Error(w, "Необходима аутентификация", http.StatusNoContent)
+		//	return
+		//}
+		//
+		//// Извлечь UserID из куки
+		//userID := auth.GetUserID(cookie.Value)
+		//if userID == -1 {
+		//	http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
+		//	return
+		//}
+		//// Получить куку JWT из запроса
+		//cookie, err = r.Cookie("jwt")
+		//if err != nil || cookie.Value == "" {
+		//	http.Error(w, "Необходима аутентификация", http.StatusNoContent)
+		//	return
+		//}
+		//
+		//// Извлечь UserID из куки
+		//userID = auth.GetUserID(cookie.Value)
+		//if userID == -1 {
+		//	http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
+		//	return
+		//}
 
 		// Читаем тело запроса
 		var urlsToDelete []string
-		err = json.NewDecoder(r.Body).Decode(&urlsToDelete)
+		err := json.NewDecoder(r.Body).Decode(&urlsToDelete)
 		if err != nil {
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
