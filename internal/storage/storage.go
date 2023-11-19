@@ -9,8 +9,12 @@ type ST interface {
 }
 type Storage struct {
 	URLsStore map[string]string
-	UserID    int
-	mu        sync.RWMutex
+	User
+	mu sync.RWMutex
+}
+
+type User struct {
+	UserID int
 }
 
 func NewStorage() *Storage {

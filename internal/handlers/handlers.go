@@ -300,9 +300,11 @@ func (db *DataBaseHandle) HandlePing() http.HandlerFunc {
 	}
 }
 
+var userURLs = map[int][]*storage.Storage{}
+
 func GetUserURLs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var userURLs = map[int][]*storage.Storage{}
+
 		// Получить куку JWT из запроса
 		cookie, err := r.Cookie("jwt")
 		if err != nil || cookie.Value == "" {
@@ -318,7 +320,7 @@ func GetUserURLs() http.HandlerFunc {
 		}
 		userStorage := storage.Storage{
 			URLsStore: st.URLsStore,
-			UserID:    userID,
+			User:      storage.User{UserID: userID},
 		}
 		userURLs[userID] = append(userURLs[userID], &userStorage)
 		// Поиск сокращенных URL для данного пользователя
