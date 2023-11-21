@@ -361,19 +361,6 @@ func (db *DataBaseHandle) DeleteHandler() http.HandlerFunc {
 			http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
 			return
 		}
-		// Получить куку JWT из запроса
-		cookie, err = r.Cookie("jwt")
-		if err != nil || cookie.Value == "" {
-			http.Error(w, "Необходима аутентификация", http.StatusNoContent)
-			return
-		}
-
-		// Извлечь UserID из куки
-		userID = auth.GetUserID(cookie.Value)
-		if userID == -1 {
-			http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
-			return
-		}
 
 		// Читаем тело запроса
 		var urlsToDelete []string
@@ -396,7 +383,6 @@ func (db *DataBaseHandle) DeleteHandler() http.HandlerFunc {
 		for res := range result {
 			log.Println(res)
 		}
-		r.Close = true
 		w.WriteHeader(http.StatusAccepted)
 	}
 }
