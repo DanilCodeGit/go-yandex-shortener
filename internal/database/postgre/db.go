@@ -116,7 +116,7 @@ func (db *DB) GetFlagShortURL(shortURL string) (bool, error) {
 		if err == sql.ErrNoRows {
 			return false, nil // No rows found, return false and no error
 		}
-		return false, err // Error occurred while scanning the row
+		return false, err
 	}
 	return deletedFlag, nil
 }
