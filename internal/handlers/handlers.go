@@ -407,7 +407,7 @@ func generator(doneCh chan struct{}, input []string) chan string {
 
 // fanOut принимает канал данных, порождает 10 горутин
 func fanOut(doneCh chan struct{}, inputCh chan string, db *postgre.DB) []chan error {
-	// количество горутин add
+
 	numWorkers := 20
 	// каналы, в которые отправляются результаты
 	channels := make([]chan error, numWorkers)
