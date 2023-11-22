@@ -379,7 +379,7 @@ func (db *DataBaseHandle) DeleteHandler() http.HandlerFunc {
 
 		channels := fanOut(doneCh, inputCh, db.DB)
 		result := fanIn(doneCh, channels...)
-
+		defer r.Body.Close()
 		for res := range result {
 			log.Println(res)
 		}
