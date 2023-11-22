@@ -464,7 +464,7 @@ func fanIn(doneCh chan struct{}, resultChs ...chan error) chan error {
 	}()
 	// Проверяем наличие ошибок при закрытии канала
 	if err := recover(); err != nil {
-		log.Printf("Error closing finalCh: %v", err)
+		log.Fatalf("Error closing finalCh: %v", err)
 	}
 
 	// возвращаем результирующий канал

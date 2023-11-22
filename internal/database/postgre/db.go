@@ -100,6 +100,9 @@ func (db *DB) SaveBatch(ctx context.Context, batch map[string]string) (string, e
 }
 
 func (db *DB) MarkURLAsDeleted(shortURL string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	query := "UPDATE short_urls SET is_deleted = true WHERE short_url = $1"
 	_, err := db.Conn.Exec(context.TODO(), query, shortURL)
 	if err != nil {
