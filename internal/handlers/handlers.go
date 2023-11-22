@@ -213,7 +213,7 @@ func (db *DataBaseHandle) MultipleRequestHandler() http.HandlerFunc {
 		var shortenData []ShortenStruct
 
 		for _, item := range m {
-			// Создаем хеш SHA-256 от OriginalUrl
+
 			hash := tools.HashURL(item.OriginalURL)
 			tmp := hash
 			shortURL := "http://localhost:8080" + "/" + hash
