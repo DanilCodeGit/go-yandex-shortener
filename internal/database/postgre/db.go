@@ -2,6 +2,7 @@ package postgre
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -40,7 +41,8 @@ func NewDataBase(ctx context.Context, dsn string) (*DB, error) {
 func (db *DB) CreateTable(ctx context.Context) error {
 	createTable := `CREATE TABLE  short_urls (
 	  	original_url varchar(255) NOT NULL constraint original_url_key unique ,
-	  	short_url VARCHAR(255) NOT NULL
+	  	short_url VARCHAR(255) NOT NULL,
+	  	is_deleted bool not null default false
 
 )`
 	_, err := db.Conn.Exec(ctx, createTable)
@@ -62,8 +64,6 @@ func (db *DB) SaveShortenedURL(ctx context.Context, originalURL, shortURL string
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
-			fmt.Println(pgErr.Message)
-			fmt.Println(pgErr.Code)
 			return pgErr.Code, nil
 		}
 	}
@@ -75,21 +75,51 @@ func (db *DB) Close(ctx context.Context) {
 	defer db.Conn.Close()
 }
 
-func (db *DB) SaveBatch(ctx context.Context, originalURL, shortURL string) (string, error) {
+func (db *DB) SaveBatch(ctx context.Context, batch map[string]string) (string, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	_, err := db.Conn.Exec(ctx,
-		`INSERT INTO 
+	var err error
+	for i, v := range batch {
+		originalURL := v
+		shortURL := i
+		_, err := db.Conn.Exec(ctx,
+			`INSERT INTO 
 			short_urls (original_url, short_url) 
 			VALUES 
 			($1, $2)`,
-		originalURL, shortURL)
-	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			return pgErr.Code, nil
+			originalURL, shortURL)
+		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) {
+				return pgErr.Code, nil
+			}
 		}
 	}
 
 	return "", err
+}
+
+func (db *DB) MarkURLAsDeleted(shortURL string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	query := "UPDATE short_urls SET is_deleted = true WHERE short_url = $1"
+	_, err := db.Conn.Exec(context.TODO(), query, shortURL)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *DB) GetFlagShortURL(shortURL string) (bool, error) {
+	query := `select is_deleted from short_urls where short_url = $1`
+	var deletedFlag bool
+	row := db.Conn.QueryRow(context.TODO(), query, shortURL)
+	if err := row.Scan(&deletedFlag); err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil // No rows found, return false and no error
+		}
+		return false, err
+	}
+	return deletedFlag, nil
 }
