@@ -379,7 +379,7 @@ func (db *DataBaseHandle) DeleteHandler() http.HandlerFunc {
 
 		channels := fanOut(doneCh, inputCh, db.DB)
 		result := fanIn(doneCh, channels...)
-		defer r.Body.Close()
+
 		for res := range result {
 			log.Println(res)
 		}
@@ -462,6 +462,10 @@ func fanIn(doneCh chan struct{}, resultChs ...chan error) chan error {
 		// когда все горутины завершились, закрываем результирующий канал
 		close(finalCh)
 	}()
+	// Проверяем наличие ошибок при закрытии канала
+	if err := recover(); err != nil {
+		log.Printf("Error closing finalCh: %v", err)
+	}
 
 	// возвращаем результирующий канал
 	return finalCh
