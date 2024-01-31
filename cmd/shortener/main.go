@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/DanilCodeGit/go-yandex-shortener/cmd/shortener/gzip"
+	"github.com/DanilCodeGit/go-yandex-shortener/internal/auth"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/database/postgre"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/handlers"
@@ -22,22 +23,29 @@ func main() {
 	if err != nil {
 		log.Fatal("Database connection failed")
 	}
+
+	dbHandle := handlers.DataBaseHandle{DB: conn}
 	err = conn.CreateTable(ctx)
 	if err != nil {
-		log.Println(err)
+		log.Println("Таблица уже создана")
 	}
 
 	r := chi.NewRouter()
-	loggerGetPing := logger.WithLogging(gzipMiddleware(handlers.HandlePing(conn)))
-	loggerGet := logger.WithLogging(gzipMiddleware(handlers.HandleGet()))
-	loggerPost := logger.WithLogging(gzipMiddleware(handlers.HandlePost(conn)))
-	loggerJSONHandler := logger.WithLogging(gzipMiddleware(handlers.JSONHandler(conn)))
-	loggerMultipleRequestHandler := logger.WithLogging(gzipMiddleware(handlers.MultipleRequestHandler(conn)))
-	r.Get("/ping", loggerGetPing.ServeHTTP)
-	r.Get("/{id}", loggerGet.ServeHTTP)
-	r.Post("/", loggerPost.ServeHTTP)
-	r.Post("/api/shorten", loggerJSONHandler.ServeHTTP)
-	r.Post("/api/shorten/batch", loggerMultipleRequestHandler.ServeHTTP)
+	GetPing := auth.MiddleWareAuth(gzipMiddleware(dbHandle.HandlePing()))
+	Get := auth.MiddleWareAuth(gzipMiddleware(dbHandle.HandleGet()))
+	Post := auth.MiddleWareAuth(gzipMiddleware(dbHandle.HandlePost()))
+	JSONHandler := auth.MiddleWareAuth(gzipMiddleware(dbHandle.JSONHandler()))
+	MultipleRequestHandler := auth.MiddleWareAuth(gzipMiddleware(dbHandle.MultipleRequestHandler()))
+	DeleteShortURLs := auth.MiddleWareAuth(gzipMiddleware(dbHandle.DeleteHandler()))
+	GetUserURLs := auth.MiddleWareAuth(handlers.GetUserURLs())
+	r.Use(logger.WithLogging)
+	r.Delete("/api/user/urls", DeleteShortURLs)
+	r.Get("/api/user/urls", GetUserURLs.ServeHTTP)
+	r.Get("/ping", GetPing.ServeHTTP)
+	r.Get("/{id}", Get.ServeHTTP)
+	r.Post("/", Post.ServeHTTP)
+	r.Post("/api/shorten", JSONHandler.ServeHTTP)
+	r.Post("/api/shorten/batch", MultipleRequestHandler.ServeHTTP)
 
 	err = http.ListenAndServe(*cfg.FlagServerAddress, r)
 	if err != nil {

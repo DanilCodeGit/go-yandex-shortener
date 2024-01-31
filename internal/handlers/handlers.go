@@ -9,7 +9,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 
+	"github.com/DanilCodeGit/go-yandex-shortener/internal/auth"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/cfg"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/database/postgre"
 	"github.com/DanilCodeGit/go-yandex-shortener/internal/storage"
@@ -20,6 +22,9 @@ import (
 
 var st = *storage.NewStorage()
 
+type DataBaseHandle struct {
+	DB *postgre.DB
+}
 type URLData struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
@@ -46,9 +51,11 @@ func saveDataToFile(data map[string]string, filePath string) error {
 	return nil
 }
 
-func HandlePost(db *postgre.DB) http.HandlerFunc {
+func (db *DataBaseHandle) HandlePost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
 		ctx := r.Context()
+
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -70,10 +77,9 @@ func HandlePost(db *postgre.DB) http.HandlerFunc {
 		for shortURL, originalURL := range st.URLsStore {
 			jsonData[shortURL] = originalURL
 		}
-
 		////////////////////// DATABASE
 
-		code, _ := db.SaveShortenedURL(ctx, url, shortURL)
+		code, _ := db.DB.SaveShortenedURL(ctx, url, shortURL)
 		if code == pgerrcode.UniqueViolation {
 			log.Println("Запись не произошла")
 			w.WriteHeader(http.StatusConflict)
@@ -104,8 +110,9 @@ func HandlePost(db *postgre.DB) http.HandlerFunc {
 	}
 }
 
-func JSONHandler(db *postgre.DB) http.HandlerFunc {
+func (db *DataBaseHandle) JSONHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+
 		ctx := req.Context()
 		var buf bytes.Buffer
 		// читаем тело запроса
@@ -151,7 +158,7 @@ func JSONHandler(db *postgre.DB) http.HandlerFunc {
 		}
 		////////////////////// DATABASE
 
-		code, _ := db.SaveShortenedURL(ctx, url, shortURL)
+		code, _ := db.DB.SaveShortenedURL(ctx, url, shortURL)
 		if code == pgerrcode.UniqueViolation {
 			log.Println("Запись не произошла")
 			w.Header().Set("Content-Type", "application/json")
@@ -181,8 +188,9 @@ type Multi struct {
 	OriginalURL   string `json:"original_url"`
 }
 
-func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
+func (db *DataBaseHandle) MultipleRequestHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
 		ctx := r.Context()
 		var m []Multi
 		var buf bytes.Buffer
@@ -205,7 +213,7 @@ func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 		var shortenData []ShortenStruct
 
 		for _, item := range m {
-			// Создаем хеш SHA-256 от OriginalUrl
+
 			hash := tools.HashURL(item.OriginalURL)
 			tmp := hash
 			shortURL := "http://localhost:8080" + "/" + hash
@@ -238,20 +246,12 @@ func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 		}
 
 		////////////////////// DATABASE
-
-		for shortURL, originalURL := range newData {
-			code, _ := db.SaveBatch(ctx, originalURL, shortURL)
-			if code == pgerrcode.UniqueViolation {
-				log.Println("Запись не произошла")
-				w.WriteHeader(http.StatusConflict)
-				fprintf, err := fmt.Fprintf(w, "%s/%s", *cfg.FlagBaseURL, shortURL)
-				if err != nil {
-					return
-				}
-				fmt.Print(fprintf)
-				return
-			}
-
+		code, _ := db.DB.SaveBatch(ctx, newData)
+		if code == pgerrcode.UniqueViolation {
+			log.Println("Запись не произошла")
+			w.WriteHeader(http.StatusConflict)
+			w.Write(shortenJSON)
+			return
 		}
 
 		///////////////////////
@@ -262,14 +262,22 @@ func MultipleRequestHandler(db *postgre.DB) http.HandlerFunc {
 	}
 }
 
-func HandleGet() http.HandlerFunc {
+func (db *DataBaseHandle) HandleGet() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		originalURL, ok := st.GetURL(id)
 		if !ok {
 			log.Fatal(originalURL)
 		}
-
+		flag, err := db.DB.GetFlagShortURL(id)
+		if err != nil {
+			log.Println("Ошибка получения shortURL из запроса к бд")
+			//return
+		}
+		if flag {
+			w.WriteHeader(http.StatusGone)
+			return
+		}
 		fmt.Println("orig: ", originalURL)
 		fmt.Println("st: ", st.URLsStore)
 		w.Header().Set("Location", originalURL)
@@ -277,17 +285,211 @@ func HandleGet() http.HandlerFunc {
 	}
 }
 
-func HandlePing(db *postgre.DB) http.HandlerFunc {
+func (db *DataBaseHandle) HandlePing() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
 		defer r.Body.Close()
+		ctx := r.Context()
 		_, err := postgre.NewDataBase(context.Background(), *cfg.FlagDataBaseDSN)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Fatalf("Хэндлер не может подключиться к бд")
 		}
-		db.Close(ctx)
+		db.DB.Close(ctx)
 		w.Header().Set("Location", "Success")
 		w.WriteHeader(http.StatusOK)
 	}
+}
+
+func GetUserURLs() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		// Получить куку JWT из запроса
+		cookie, err := r.Cookie("jwt")
+		if err != nil || cookie.Value == "" {
+			http.Error(w, "Необходима аутентификация", http.StatusNoContent)
+			return
+		}
+		// Извлечь UserID из куки
+		userID := auth.GetUserID(cookie.Value)
+		if userID == -1 {
+			http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
+			return
+		}
+		userURLs := map[int][]*storage.UserStorage{}
+
+		userStorage := storage.UserStorage{
+			UserID:  userID,
+			Storage: storage.Storage{URLsStore: st.URLsStore},
+		}
+		userURLs[userID] = append(userURLs[userID], &userStorage)
+		// Поиск сокращенных URL для данного пользователя
+		urls, exists := userURLs[userID]
+		if !exists || len(urls) == 0 {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		var formatURLs []URLData
+		for _, userStorage := range urls {
+			for shortURL, originalURL := range userStorage.URLsStore {
+				formatURLs = append(formatURLs, URLData{
+					ShortURL:    "http://localhost:8080/" + shortURL,
+					OriginalURL: originalURL,
+				})
+			}
+			//break
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(formatURLs)
+
+	}
+}
+
+func (db *DataBaseHandle) DeleteHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Получить куку JWT из запроса
+		cookie, err := r.Cookie("jwt")
+		if err != nil || cookie.Value == "" {
+			http.Error(w, "Необходима аутентификация", http.StatusNoContent)
+			return
+		}
+
+		// Извлечь UserID из куки
+		userID := auth.GetUserID(cookie.Value)
+		if userID == -1 {
+			http.Error(w, "Недействительный JWT-токен", http.StatusUnauthorized)
+			return
+		}
+
+		// Читаем тело запроса
+		var urlsToDelete []string
+		err = json.NewDecoder(r.Body).Decode(&urlsToDelete)
+		if err != nil {
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+			return
+		}
+
+		// канал для сигнала к выходу из горутины
+		doneCh := make(chan struct{})
+		// при завершении программы закрываем канал doneCh, чтобы все горутины тоже завершились
+		defer close(doneCh)
+		inputCh := generator(doneCh, urlsToDelete)
+		log.Println("InputCh: ", inputCh)
+
+		channels := fanOut(doneCh, inputCh, db.DB)
+		result := fanIn(doneCh, channels...)
+
+		for res := range result {
+			log.Println(res)
+		}
+		w.WriteHeader(http.StatusAccepted)
+	}
+}
+
+func generator(doneCh chan struct{}, input []string) chan string {
+	inputCh := make(chan string)
+
+	go func() {
+		defer close(inputCh)
+
+		for _, data := range input {
+			select {
+			case <-doneCh:
+				return
+			case inputCh <- data:
+			}
+		}
+	}()
+
+	return inputCh
+}
+
+// fanOut принимает канал данных, порождает 10 горутин
+func fanOut(doneCh chan struct{}, inputCh chan string, db *postgre.DB) []chan error {
+
+	numWorkers := 20
+	// каналы, в которые отправляются результаты
+	channels := make([]chan error, numWorkers)
+
+	for i := 0; i < numWorkers; i++ {
+		// получаем канал из горутины add
+		addResultCh := deleteURLs(doneCh, inputCh, db)
+		// отправляем его в слайс каналов
+		channels[i] = addResultCh
+	}
+
+	// возвращаем слайс каналов
+	return channels
+}
+
+// fanIn объединяет несколько каналов resultChs в один.
+func fanIn(doneCh chan struct{}, resultChs ...chan error) chan error {
+	// конечный выходной канал в который отправляем данные из всех каналов из слайса, назовём его результирующим
+	finalCh := make(chan error)
+
+	// понадобится для ожидания всех горутин
+	var wg sync.WaitGroup
+
+	// перебираем все входящие каналы
+	for _, ch := range resultChs {
+		// в горутину передавать переменную цикла нельзя, поэтому делаем так
+		chClosure := ch
+
+		// инкрементируем счётчик горутин, которые нужно подождать
+		wg.Add(1)
+
+		go func() {
+			// откладываем сообщение о том, что горутина завершилась
+			defer wg.Done()
+
+			// получаем данные из канала
+			for data := range chClosure {
+				select {
+				// выходим из горутины, если канал закрылся
+				case <-doneCh:
+					return
+				// если не закрылся, отправляем данные в конечный выходной канал
+				case finalCh <- data:
+				}
+			}
+		}()
+	}
+
+	go func() {
+		// ждём завершения всех горутин
+		wg.Wait()
+		// когда все горутины завершились, закрываем результирующий канал
+		close(finalCh)
+	}()
+	// Проверяем наличие ошибок при закрытии канала
+	if err := recover(); err != nil {
+		log.Fatalf("Error closing finalCh: %v", err)
+	}
+
+	// возвращаем результирующий канал
+	return finalCh
+}
+func deleteURLs(doneCh chan struct{}, inputCh chan string, db *postgre.DB) chan error {
+	addRes := make(chan error)
+
+	go func() {
+		defer close(addRes)
+
+		for data := range inputCh {
+
+			err := db.MarkURLAsDeleted(data)
+			if err != nil {
+				// Обработка ошибок при удалении
+				log.Printf("Failed to mark URL %s as deleted: %v", data, err)
+			}
+
+			select {
+			case <-doneCh:
+				return
+			case addRes <- err:
+			}
+		}
+	}()
+	return addRes
 }
